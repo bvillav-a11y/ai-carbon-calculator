@@ -11,20 +11,43 @@
   --bg:        #0d1117;
   --surface:   #161b22;
   --surface2:  #1c2330;
-  --border:    #30363d;
+  --border:    #444c56;       /* was #30363d — lifted for AA non-text contrast */
   --green:     #3fb950;
   --green-dim: #122d1a;
   --amber:     #e3b341;
   --amber-dim: #3d2f0a;
-  --red:       #f85149;
+  --red:       #ff7b72;        /* was #f85149 — lifted for 4.5:1 on bg */
   --red-dim:   #3d0f0d;
-  --blue:      #58a6ff;
+  --blue:      #79b8ff;        /* was #58a6ff — lifted for 4.5:1 on bg */
   --purple:    #bc8cff;
   --text:      #e6edf3;
-  --muted:     #8b949e;
-  --dim:       #484f58;
+  --muted:     #b1bac4;        /* was #8b949e — lifted for AA on small text */
+  --dim:       #8b949e;        /* was #484f58 — lifted to meet 4.5:1 on bg */
+  --focus:     #79c0ff;        /* high-contrast focus ring */
   --mono:      'Space Mono', monospace;
   --sans:      'Space Grotesk', sans-serif;
+}
+
+/* ── Accessible focus rings: visible on every interactive control ── */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* sliders need a different treatment so the ring doesn't clip the thumb */
+input[type=range]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+
+/* visually-hidden helper for screen-reader-only labels */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -49,7 +72,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 }
 
 .wiz-eye {
-  font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  font-family:var(--mono);font-size:12px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--green);margin-bottom:6px;
 }
 
@@ -69,7 +92,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
   height:100%;background:var(--green);border-radius:2px;transition:width .4s ease;
 }
 .prog-label {
-  font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:8px;
+  font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:8px;
   display:flex;justify-content:space-between;
 }
 
@@ -88,7 +111,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
   font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.5;
 }
 .step-why {
-  font-size:11px;color:var(--dim);margin-top:14px;padding-top:10px;
+  font-size:12px;color:var(--muted);margin-top:14px;padding-top:10px;
   border-top:1px solid var(--border);line-height:1.5;font-style:italic;
 }
 
@@ -98,21 +121,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 }
 .likert-opt {
   flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
-  cursor:pointer;
+  cursor:pointer;position:relative;
 }
-.likert-opt input{display:none;}
+/* Visually hide the radio input but keep it focusable for screen-reader users */
+.likert-opt input{
+  position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;
+  margin:0;cursor:pointer;
+}
+.likert-opt input:focus-visible ~ .likert-btn{
+  outline:2px solid var(--focus);outline-offset:2px;
+}
 .likert-btn {
   width:100%;padding:10px 4px;border-radius:7px;border:1px solid var(--border);
-  background:var(--surface2);font-family:var(--mono);font-size:11px;
-  color:var(--muted);text-align:center;cursor:pointer;transition:all .18s;
+  background:var(--surface2);font-family:var(--mono);font-size:13px;
+  color:var(--text);text-align:center;cursor:pointer;transition:all .18s;
   line-height:1.3;
 }
 .likert-opt input:checked ~ .likert-btn,
-.likert-btn.selected {
+.likert-btn.selected,
+.likert-btn[aria-checked="true"] {
   border-color:var(--green);background:var(--green-dim);color:var(--green);
 }
 .likert-lbl {
-  font-size:10px;color:var(--dim);text-align:center;line-height:1.3;
+  font-size:12px;color:var(--muted);text-align:center;line-height:1.3;
 }
 
 /* choice grid */
@@ -126,12 +157,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
   background:var(--surface2);border:1px solid var(--border);border-radius:7px;
   padding:12px 14px;cursor:pointer;transition:all .18s;
   display:flex;flex-direction:column;gap:3px;
+  text-align:left;width:100%;color:inherit;font-family:inherit;
 }
 .choice-opt:hover{border-color:var(--muted);}
-.choice-opt.selected{border-color:var(--green);background:var(--green-dim);}
-.choice-main{font-size:13px;font-weight:600;}
-.choice-sub{font-size:11px;color:var(--muted);line-height:1.4;}
-.choice-opt.selected .choice-sub{color:var(--green);opacity:.8;}
+.choice-opt.selected,
+.choice-opt[aria-checked="true"]{border-color:var(--green);background:var(--green-dim);}
+.choice-main{font-size:14px;font-weight:600;}
+.choice-sub{font-size:12px;color:var(--muted);line-height:1.4;}
+.choice-opt.selected .choice-sub,
+.choice-opt[aria-checked="true"] .choice-sub{color:var(--green);opacity:.85;}
 
 /* token input */
 .tok-wrap{display:flex;flex-direction:column;gap:10px;}
@@ -146,11 +180,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .tok-presets{display:flex;gap:8px;flex-wrap:wrap;}
 .tok-preset{
   background:var(--surface2);border:1px solid var(--border);border-radius:5px;
-  padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--muted);
+  padding:6px 10px;font-size:12px;font-family:var(--mono);color:var(--text);
   cursor:pointer;transition:all .15s;
 }
-.tok-preset:hover,.tok-preset.sel{border-color:var(--green);color:var(--green);background:var(--green-dim);}
-.tok-fallback{font-size:11px;color:var(--dim);margin-top:4px;}
+.tok-preset:hover,.tok-preset.sel,.tok-preset[aria-pressed="true"]{
+  border-color:var(--green);color:var(--green);background:var(--green-dim);
+}
+.tok-preset-sub{font-size:11px;color:var(--muted);}
+.tok-preset:hover .tok-preset-sub,
+.tok-preset.sel .tok-preset-sub,
+.tok-preset[aria-pressed="true"] .tok-preset-sub{color:var(--green);opacity:.85;}
+.tok-fallback{font-size:12px;color:var(--muted);margin-top:4px;}
 
 /* nav */
 .wiz-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;}
@@ -182,19 +222,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
   background:var(--surface);border:1px solid var(--border);border-radius:8px;
   padding:14px 16px;
 }
-.infer-param{font-size:11px;color:var(--muted);font-family:var(--mono);
+.infer-param{font-size:12px;color:var(--muted);font-family:var(--mono);
   text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
-.infer-val{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green);margin-bottom:4px;}
-.infer-reason{font-size:11px;color:var(--dim);line-height:1.5;}
+.infer-val{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.infer-reason{font-size:12px;color:var(--muted);line-height:1.5;}
 
 .infer-slider-row{display:flex;align-items:center;gap:10px;margin-top:6px;}
 .infer-slider-row input[type=range]{flex:1;margin:0;}
-.infer-slider-lbl{font-family:var(--mono);font-size:11px;color:var(--amber);min-width:52px;text-align:right;}
+.infer-slider-lbl{font-family:var(--mono);font-size:12px;color:var(--amber);min-width:60px;text-align:right;}
 
 .infer-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:8px;}
-.btn-redo{background:none;border:1px solid var(--border);color:var(--muted);padding:9px 18px;
-  border-radius:7px;font-family:var(--sans);font-size:12px;cursor:pointer;transition:all .2s;}
-.btn-redo:hover{border-color:var(--muted);color:var(--text);}
+.btn-redo{background:none;border:1px solid var(--border);color:var(--text);padding:10px 18px;
+  border-radius:7px;font-family:var(--sans);font-size:13px;cursor:pointer;transition:all .2s;}
+.btn-redo:hover,.btn-redo:focus-visible{border-color:var(--muted);color:var(--text);}
 
 /* ══════════════════════════════════════════
    CALCULATOR
@@ -202,16 +242,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 #calcScreen{display:none;padding:28px 20px 72px;}
 
 .hdr{max-width:920px;margin:0 auto 24px;border-bottom:1px solid var(--border);padding-bottom:18px;}
-.hdr-eye{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);margin-bottom:6px;}
+.hdr-eye{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);margin-bottom:6px;}
 .hdr h1{font-size:24px;font-weight:700;line-height:1.2;margin-bottom:4px;}
-.hdr p{color:var(--muted);font-size:13px;line-height:1.5;max-width:560px;}
-.hdr-retake{font-size:11px;color:var(--blue);cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block;}
+.hdr p{color:var(--muted);font-size:14px;line-height:1.5;max-width:560px;}
+.hdr-retake{font-size:13px;color:var(--blue);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block;font-family:inherit;}
 
 .wrap{max-width:920px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .full{grid-column:1/-1;}
 
 .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;}
-.clabel{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+.clabel{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
   color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
 .clabel::after{content:'';flex:1;height:1px;background:var(--border);}
 
@@ -219,9 +259,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .igroup:last-child{margin-bottom:0;}
 .irow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
 label{font-size:13px;font-weight:500;}
-.ival{font-family:var(--mono);font-size:12px;color:var(--amber);}
-.surveyed{font-family:var(--mono);font-size:9px;color:var(--green);
-  background:var(--green-dim);padding:2px 5px;border-radius:3px;margin-left:6px;}
+.ival{font-family:var(--mono);font-size:13px;color:var(--amber);}
+.surveyed{font-family:var(--mono);font-size:11px;color:var(--green);
+  background:var(--green-dim);padding:2px 6px;border-radius:3px;margin-left:6px;}
 
 input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;
   background:var(--border);border-radius:2px;outline:none;cursor:pointer;margin:3px 0;}
@@ -234,75 +274,85 @@ input[type=number],select{background:var(--surface2);border:1px solid var(--bord
   padding:7px 10px;width:100%;outline:none;transition:border-color .2s;}
 input[type=number]:focus,select:focus{border-color:var(--amber);}
 input[type=number]{font-family:var(--mono);}
-.hint{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.5;}
+.hint{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;}
 
 .split-bar{display:flex;height:7px;border-radius:4px;overflow:hidden;margin:5px 0;}
 .split-in{background:var(--blue);transition:width .2s;}
 .split-out{background:var(--purple);flex:1;}
-.split-legend{display:flex;gap:14px;font-size:10px;color:var(--muted);}
+.split-legend{display:flex;gap:14px;font-size:12px;color:var(--muted);}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
 
 /* results */
 .rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
 .rcell{background:var(--surface2);border:1px solid var(--border);border-radius:7px;
   padding:12px 8px;text-align:center;}
-.rnum{font-family:var(--mono);font-size:19px;font-weight:700;line-height:1;margin-bottom:3px;}
-.runit{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
-.rlbl{font-size:10px;color:var(--dim);}
+.rnum{font-family:var(--mono);font-size:20px;font-weight:700;line-height:1;margin-bottom:3px;}
+.runit{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+.rlbl{font-size:12px;color:var(--muted);}
 .cg{color:var(--green);}.ca{color:var(--amber);}.cb{color:var(--blue);}.cr{color:var(--red);}
 
 .pertok-row{background:var(--surface2);border:1px solid var(--border);border-radius:7px;
   padding:11px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
 
+.btn-share{background:var(--surface2);border:1px solid var(--green);color:var(--green);
+  padding:9px 16px;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .2s;}
+.btn-share:hover,.btn-share:focus-visible{background:var(--green-dim);}
+.share-toast{font-family:var(--mono);font-size:12px;color:var(--green);
+  align-self:center;opacity:0;transition:opacity .25s;}
+.share-toast.show{opacity:1;}
+
 .eqbox{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
-  padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:2.1;color:var(--muted);}
+  padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:2.1;color:var(--text);}
 .eqbox .ev{color:var(--green);}
-.eqbox .elbl{color:var(--blue);font-size:10px;}
-.eqbox .eop{color:var(--dim);}
+.eqbox .elbl{color:var(--blue);font-size:12px;}
+.eqbox .eop{color:var(--muted);}
 
 .cbar-wrap{margin-bottom:8px;}
-.cbar-top{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px;}
+.cbar-top{display:flex;justify-content:space-between;font-size:13px;color:var(--text);margin-bottom:3px;}
 .cbar{height:4px;background:var(--border);border-radius:3px;overflow:hidden;}
 .cbar-fill{height:100%;border-radius:3px;transition:width .4s ease;}
 
 .cmp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .cmp-cell{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
   padding:12px;text-align:center;}
-.cmp-name{font-size:11px;color:var(--muted);margin-bottom:4px;}
-.cmp-val{font-family:var(--mono);font-size:16px;font-weight:700;}
-.cmp-sub{font-size:10px;color:var(--dim);margin-top:2px;}
+.cmp-name{font-size:13px;color:var(--muted);margin-bottom:4px;}
+.cmp-val{font-family:var(--mono);font-size:17px;font-weight:700;}
+.cmp-sub{font-size:12px;color:var(--muted);margin-top:2px;}
 
-.atbl{width:100%;border-collapse:collapse;font-size:12px;}
+.atbl{width:100%;border-collapse:collapse;font-size:13px;}
 .atbl th{text-align:left;color:var(--muted);font-weight:500;padding:6px 8px;
-  border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;
+  border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;
   text-transform:uppercase;letter-spacing:.08em;}
 .atbl td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--muted);vertical-align:top;}
 .atbl td:first-child{color:var(--text);font-weight:500;}
 .atbl td:nth-child(2){font-family:var(--mono);color:var(--green);}
-.atbl td.contrib{color:var(--muted);font-size:11px;line-height:1.5;}
-.atbl a{color:var(--blue);text-decoration:none;font-size:10px;font-family:var(--mono);}
-.atbl a:hover{text-decoration:underline;}
+.atbl td.contrib{color:var(--muted);font-size:12px;line-height:1.5;}
+.atbl a{color:var(--blue);text-decoration:underline;font-size:12px;font-family:var(--mono);}
+.atbl a:hover{color:var(--focus);}
 
-.badge{display:inline-block;padding:2px 5px;border-radius:3px;
-  font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.05em;}
+.badge{display:inline-block;padding:3px 7px;border-radius:3px;
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;}
 .bl{background:var(--green-dim);color:var(--green);}
 .bm{background:var(--amber-dim);color:var(--amber);}
 .bh{background:var(--red-dim);color:var(--red);}
 
-.tog{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);
-  cursor:pointer;font-family:var(--sans);font-size:11px;padding:5px 10px;
+.tog{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text);
+  cursor:pointer;font-family:var(--sans);font-size:13px;padding:6px 12px;
   transition:all .2s;margin-top:8px;}
-.tog:hover{border-color:var(--green);color:var(--green);}
+.tog:hover,.tog:focus-visible{border-color:var(--green);color:var(--green);}
 .adv{display:none;margin-top:10px;}
 .adv.open{display:block;}
-.subdiv{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;
+.subdiv{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;
   letter-spacing:.1em;margin:8px 0 6px;}
 
-.loc-tbl{width:100%;font-size:12px;border-collapse:collapse;}
-.loc-tbl td{padding:5px 0;border-bottom:1px solid var(--border);}
+.loc-tbl{width:100%;font-size:13px;border-collapse:collapse;}
+.loc-tbl td{padding:8px 4px;border-bottom:1px solid var(--border);}
 .loc-tbl td:last-child{font-family:var(--mono);text-align:right;}
 .loc-tbl tr.active-loc td{color:var(--green);}
 .loc-tbl tr{cursor:pointer;}
+.loc-tbl tr:hover td{color:var(--text);background:var(--surface2);}
+.loc-tbl tr:focus-visible{outline:2px solid var(--focus);outline-offset:-2px;}
 </style>
 </head>
 <body>
@@ -310,55 +360,61 @@ input[type=number]{font-family:var(--mono);}
 <!-- ══════════════════════════════════════════
      WIZARD SCREEN
 ══════════════════════════════════════════ -->
-<div id="wizard">
+<main id="wizard" aria-labelledby="wizTitle">
 <div class="wiz-shell">
-  <div class="wiz-eye">// AI Carbon Calculator</div>
-  <h1 class="wiz-title">Let's profile your AI usage</h1>
+  <div class="wiz-eye" aria-hidden="true">// AI Carbon Calculator</div>
+  <h1 class="wiz-title" id="wizTitle">Let's profile your AI usage</h1>
   <p class="wiz-sub">8 quick questions. No technical knowledge needed — we'll infer the parameters from your answers.</p>
 
-  <div class="prog-label">
+  <div class="prog-label" aria-live="polite" aria-atomic="true">
     <span id="stepLabel">Question 1 of 8</span>
     <span id="stepPct">0%</span>
   </div>
-  <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+  <div class="prog-bar"
+       role="progressbar"
+       aria-label="Survey progress"
+       aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+       id="progBar">
+    <div class="prog-fill" id="progFill" style="width:0%"></div>
+  </div>
 
   <div id="stepContainer"></div>
 
-  <div class="wiz-nav">
-    <button class="btn btn-back" id="btnBack" onclick="wizBack()" style="visibility:hidden">← Back</button>
-    <button class="btn btn-next" id="btnNext" onclick="wizNext()" disabled>Next →</button>
-  </div>
+  <nav class="wiz-nav" aria-label="Survey navigation">
+    <button class="btn btn-back" id="btnBack" onclick="wizBack()" style="visibility:hidden" type="button">← Back</button>
+    <button class="btn btn-next" id="btnNext" onclick="wizNext()" disabled type="button">Next →</button>
+  </nav>
 </div>
-</div>
+</main>
 
 <!-- ══════════════════════════════════════════
      INFERENCE SUMMARY SCREEN
 ══════════════════════════════════════════ -->
-<div id="inferScreen" style="display:none;min-height:100vh;padding:40px 20px;
+<main id="inferScreen" aria-labelledby="inferTitle" style="display:none;min-height:100vh;padding:40px 20px;
   display:none;align-items:center;justify-content:center;flex-direction:column;">
 <div class="infer-shell">
-  <div class="wiz-eye">// Survey complete</div>
-  <h2 class="infer-title">Here's what we inferred from your answers</h2>
+  <div class="wiz-eye" aria-hidden="true">// Survey complete</div>
+  <h2 class="infer-title" id="inferTitle">Here's what we inferred from your answers</h2>
   <p class="infer-sub">Each parameter was derived from your responses. You can fine-tune any value before running the calculator — the slider turns amber when you override a survey result.</p>
 
   <div class="infer-grid" id="inferGrid"></div>
 
   <div class="infer-actions">
-    <button class="btn btn-redo" onclick="retakeSurvey()">↺ Retake survey</button>
-    <button class="btn btn-calc" onclick="showCalc()">Calculate my impact →</button>
+    <button class="btn btn-redo" onclick="retakeSurvey()" type="button">↺ Retake survey</button>
+    <button class="btn btn-calc" onclick="showCalc()" type="button">Calculate my impact →</button>
   </div>
 </div>
-</div>
+</main>
 
 <!-- ══════════════════════════════════════════
      CALCULATOR SCREEN
 ══════════════════════════════════════════ -->
-<div id="calcScreen" style="display:none;">
+<main id="calcScreen" aria-labelledby="calcTitle" style="display:none;">
 <div class="hdr">
-  <div class="hdr-eye">// AI Carbon Impact Calculator</div>
-  <h1>Your Monthly AI Carbon Footprint</h1>
+  <div class="hdr-eye" aria-hidden="true">// AI Carbon Impact Calculator</div>
+  <h1 id="calcTitle">Your Monthly AI Carbon Footprint</h1>
   <p>Results calibrated from your survey. All inferred parameters are editable below.</p>
-  <span class="hdr-retake" onclick="retakeSurvey()">↺ Retake survey to recalibrate</span>
+  <button class="hdr-retake" onclick="retakeSurvey()" type="button">↺ Retake survey to recalibrate</button>
 </div>
 
 <div class="wrap">
@@ -408,7 +464,10 @@ input[type=number]{font-family:var(--mono);}
           <span class="ival" id="outPctLbl">75%</span>
         </div>
         <input type="range" id="outPct" min="5" max="95" value="75"
+               aria-label="Output token fraction, percent"
+               aria-valuetext="75 percent output, 25 percent input"
                oninput="document.getElementById('outPctLbl').textContent=this.value+'%';
+                        this.setAttribute('aria-valuetext', this.value+' percent output, '+(100-this.value)+' percent input');
                         document.getElementById('splitIn').style.width=(100-this.value)+'%';
                         recalc();">
         <div class="split-bar">
@@ -441,7 +500,11 @@ input[type=number]{font-family:var(--mono);}
           <span class="ival" id="utilLbl">60%</span>
         </div>
         <input type="range" id="util" min="10" max="100" value="60"
-               oninput="document.getElementById('utilLbl').textContent=this.value+'%';recalc();">
+               aria-label="Hardware utilisation, percent"
+               aria-valuetext="60 percent"
+               oninput="document.getElementById('utilLbl').textContent=this.value+'%';
+                        this.setAttribute('aria-valuetext', this.value+' percent');
+                        recalc();">
         <div class="hint">Low = energy wasted idling. Interactive use → lower than batch pipelines.</div>
       </div>
 
@@ -451,27 +514,41 @@ input[type=number]{font-family:var(--mono);}
           <span class="ival" id="pueLbl">1.40</span>
         </div>
         <input type="range" id="pue" min="1.0" max="2.5" step="0.05" value="1.4"
-               oninput="document.getElementById('pueLbl').textContent=parseFloat(this.value).toFixed(2);recalc();">
+               aria-label="Power Usage Effectiveness"
+               aria-valuetext="1.40"
+               oninput="document.getElementById('pueLbl').textContent=parseFloat(this.value).toFixed(2);
+                        this.setAttribute('aria-valuetext', parseFloat(this.value).toFixed(2));
+                        recalc();">
         <div class="hint">1.2 = hyperscaler. 1.4 = typical cloud. 2.0+ = on-prem.</div>
       </div>
 
-      <button class="tog" onclick="toggleAdv()">⚙ Show embodied carbon settings</button>
-      <div class="adv" id="advSec">
+      <button class="tog" onclick="toggleAdv()" type="button"
+              aria-expanded="false" aria-controls="advSec" id="togBtn">⚙ Show embodied carbon settings</button>
+      <div class="adv" id="advSec" role="region" aria-labelledby="togBtn">
         <div class="subdiv">Embodied carbon</div>
         <div class="igroup">
           <div class="irow"><label>GPU manufacturing CO₂ (kg)</label><span class="ival" id="gpuCo2Lbl">200 kg</span></div>
           <input type="range" id="gpuCo2" min="50" max="500" step="10" value="200"
-                 oninput="document.getElementById('gpuCo2Lbl').textContent=this.value+' kg';recalc();">
+                 aria-label="GPU manufacturing CO2 in kilograms"
+                 oninput="document.getElementById('gpuCo2Lbl').textContent=this.value+' kg';
+                          this.setAttribute('aria-valuetext', this.value+' kilograms');
+                          recalc();">
         </div>
         <div class="igroup">
           <div class="irow"><label>GPU lifetime (years)</label><span class="ival" id="gpuLifeLbl">4 yrs</span></div>
           <input type="range" id="gpuLife" min="1" max="8" value="4"
-                 oninput="document.getElementById('gpuLifeLbl').textContent=this.value+' yrs';recalc();">
+                 aria-label="GPU lifetime in years"
+                 oninput="document.getElementById('gpuLifeLbl').textContent=this.value+' yrs';
+                          this.setAttribute('aria-valuetext', this.value+' years');
+                          recalc();">
         </div>
         <div class="igroup">
           <div class="irow"><label>Tokens per GPU / month (M)</label><span class="ival" id="gpuTokLbl">50M</span></div>
           <input type="range" id="gpuTok" min="1" max="500" step="5" value="50"
-                 oninput="document.getElementById('gpuTokLbl').textContent=this.value+'M';recalc();">
+                 aria-label="Tokens per GPU per month, in millions"
+                 oninput="document.getElementById('gpuTokLbl').textContent=this.value+'M';
+                          this.setAttribute('aria-valuetext', this.value+' million tokens');
+                          recalc();">
         </div>
       </div>
     </div>
@@ -488,16 +565,21 @@ input[type=number]{font-family:var(--mono);}
           <span class="ival" id="gridLbl">136 g CO₂/kWh</span>
         </div>
         <input type="range" id="grid" min="15" max="800" step="5" value="136"
+               aria-label="Grid carbon intensity in grams of CO2 per kilowatt hour"
+               aria-valuetext="136 grams per kilowatt hour"
                oninput="document.getElementById('gridLbl').textContent=this.value+' g CO₂/kWh';
+                        this.setAttribute('aria-valuetext', this.value+' grams per kilowatt hour');
                         updateGridHighlight();recalc();">
-        <div class="hint" style="margin-bottom:8px">Drag or click a region below.</div>
-        <table class="loc-tbl" id="locTbl">
-          <tr data-g="136" class="active-loc"><td>🇧🇷 Brazil (hydro-heavy)</td><td>136 g/kWh</td></tr>
-          <tr data-g="120"><td>🇨🇦 Canada national avg</td><td>120 g/kWh</td></tr>
-          <tr data-g="15"><td>🇨🇦 Canada BC (hydro)</td><td>15 g/kWh</td></tr>
-          <tr data-g="400"><td>🇺🇸 US average</td><td>400 g/kWh</td></tr>
-          <tr data-g="60"><td>🇫🇷 France (nuclear)</td><td>60 g/kWh</td></tr>
-          <tr data-g="700"><td>🇵🇱 Poland (coal)</td><td>700 g/kWh</td></tr>
+        <div class="hint" style="margin-bottom:8px">Drag the slider or activate a region below.</div>
+        <table class="loc-tbl" id="locTbl" role="listbox" aria-label="Quick grid presets">
+          <tbody>
+          <tr data-g="136" class="active-loc" role="option" tabindex="0" aria-selected="true"><td>🇧🇷 Brazil (hydro-heavy)</td><td>136 g/kWh</td></tr>
+          <tr data-g="120" role="option" tabindex="0" aria-selected="false"><td>🇨🇦 Canada national avg</td><td>120 g/kWh</td></tr>
+          <tr data-g="15"  role="option" tabindex="0" aria-selected="false"><td>🇨🇦 Canada BC (hydro)</td><td>15 g/kWh</td></tr>
+          <tr data-g="400" role="option" tabindex="0" aria-selected="false"><td>🇺🇸 US average</td><td>400 g/kWh</td></tr>
+          <tr data-g="60"  role="option" tabindex="0" aria-selected="false"><td>🇫🇷 France (nuclear)</td><td>60 g/kWh</td></tr>
+          <tr data-g="700" role="option" tabindex="0" aria-selected="false"><td>🇵🇱 Poland (coal)</td><td>700 g/kWh</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
@@ -505,20 +587,26 @@ input[type=number]{font-family:var(--mono);}
     <div class="card" style="margin-top:14px">
       <div class="clabel">Results — this month</div>
 
-      <div class="rgrid">
-        <div class="rcell"><div class="rnum cg" id="r-co2">—</div><div class="runit">kg CO₂</div><div class="rlbl">total</div></div>
-        <div class="rcell"><div class="rnum ca" id="r-km">—</div><div class="runit">km driven</div><div class="rlbl">car equiv.</div></div>
-        <div class="rcell"><div class="rnum cb" id="r-trees">—</div><div class="runit">trees/yr</div><div class="rlbl">to offset</div></div>
-        <div class="rcell"><div class="rnum cr" id="r-cost">—</div><div class="runit">USD</div><div class="rlbl">@ $50/t CO₂</div></div>
+      <div class="rgrid" id="resultsLive" aria-live="polite" aria-atomic="true">
+        <div class="rcell"><div class="rnum cg" id="r-co2" aria-label="Total kilograms of CO2">—</div><div class="runit">kg CO₂</div><div class="rlbl">total</div></div>
+        <div class="rcell"><div class="rnum ca" id="r-km" aria-label="Equivalent kilometers driven by car">—</div><div class="runit">km driven</div><div class="rlbl">car equiv.</div></div>
+        <div class="rcell"><div class="rnum cb" id="r-trees" aria-label="Trees per year to offset">—</div><div class="runit">trees/yr</div><div class="rlbl">to offset</div></div>
+        <div class="rcell"><div class="rnum cr" id="r-cost" aria-label="Cost in US dollars at $50 per tonne carbon">—</div><div class="runit">USD</div><div class="rlbl">@ $50/t CO₂</div></div>
       </div>
 
       <div class="pertok-row">
-        <span style="font-size:12px;color:var(--muted)">g CO₂ per token</span>
-        <span class="rnum cg" id="r-pertok" style="font-size:16px">—</span>
+        <span style="font-size:13px;color:var(--muted)">g CO₂ per token</span>
+        <span class="rnum cg" id="r-pertok" style="font-size:17px" aria-label="Grams of CO2 per token">—</span>
       </div>
 
-      <div class="clabel" style="margin-top:12px">Calculation trace</div>
-      <div class="eqbox" id="eqbox">…</div>
+      <div class="igroup" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-share" id="btnShare" onclick="shareResults()" type="button"
+                aria-label="Copy a shareable link to these results">🔗 Share results</button>
+        <span class="share-toast" id="shareToast" role="status" aria-live="polite"></span>
+      </div>
+
+      <div class="clabel" style="margin-top:16px">Calculation trace</div>
+      <div class="eqbox" id="eqbox" aria-live="polite">…</div>
     </div>
   </div>
 
@@ -641,92 +729,164 @@ const STEPS = [
 let currentStep = 0;
 const answers = {};
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function renderStep(idx) {
   const s = STEPS[idx];
   const total = STEPS.length;
   const pct = Math.round((idx / total) * 100);
+  const qId   = `q_${s.id}`;
+  const hintId = `${qId}_hint`;
+  const whyId  = `${qId}_why`;
 
   document.getElementById('stepLabel').textContent = `Question ${idx+1} of ${total}`;
   document.getElementById('stepPct').textContent = pct + '%';
   document.getElementById('progFill').style.width = pct + '%';
+  const progBar = document.getElementById('progBar');
+  progBar.setAttribute('aria-valuenow', pct);
+  progBar.setAttribute('aria-valuetext', `Question ${idx+1} of ${total}, ${pct}% complete`);
   document.getElementById('btnBack').style.visibility = idx === 0 ? 'hidden' : 'visible';
   document.getElementById('btnNext').textContent = idx === total-1 ? 'See results →' : 'Next →';
 
-  let html = `<div class="step-card">
-    <div class="step-q">${s.q}</div>
-    <div class="step-hint">${s.hint}</div>`;
+  let html = `<section class="step-card" aria-labelledby="${qId}" aria-describedby="${hintId} ${whyId}">
+    <h2 class="step-q" id="${qId}" style="font-size:17px;font-weight:600;line-height:1.4;margin-bottom:6px">${escapeHtml(s.q)}</h2>
+    <p class="step-hint" id="${hintId}">${escapeHtml(s.hint)}</p>`;
 
   if (s.type === 'likert') {
-    html += `<div class="likert">`;
+    html += `<fieldset class="likert-fieldset" style="border:none;padding:0;margin:0">
+      <legend class="sr-only">${escapeHtml(s.q)}</legend>
+      <div class="likert" role="radiogroup" aria-labelledby="${qId}" aria-describedby="${hintId}">`;
     s.opts.forEach((o, i) => {
-      const sel = answers[s.id] === i ? 'selected' : '';
+      const checked = answers[s.id] === i;
       html += `<label class="likert-opt">
-        <div class="likert-btn ${sel}" onclick="selectLikert('${s.id}', ${i}, this)">${i+1}</div>
-        <div class="likert-lbl">${o}</div>
+        <input type="radio" name="${qId}" value="${i}" ${checked?'checked':''}
+               onchange="selectLikert('${s.id}', ${i})">
+        <span class="likert-btn ${checked?'selected':''}" aria-hidden="true">${i+1}</span>
+        <span class="likert-lbl">${escapeHtml(o)}</span>
       </label>`;
     });
-    html += `</div>`;
+    html += `</div></fieldset>`;
   }
 
   else if (s.type === 'choice') {
-    html += `<div class="choice-grid ${s.cols===2?'cols2':'cols1'}">`;
+    html += `<fieldset style="border:none;padding:0;margin:0">
+      <legend class="sr-only">${escapeHtml(s.q)}</legend>
+      <div class="choice-grid ${s.cols===2?'cols2':'cols1'}" role="radiogroup" aria-labelledby="${qId}" aria-describedby="${hintId}">`;
+    const curAns = answers[s.id];
+    const tabbedIdx = curAns !== undefined ? curAns : 0;
     s.options.forEach((o, i) => {
-      const sel = answers[s.id] === i ? 'selected' : '';
-      html += `<div class="choice-opt ${sel}" onclick="selectChoice('${s.id}', ${i}, this)">
-        <div class="choice-main">${o.main}</div>
-        <div class="choice-sub">${o.sub}</div>
-      </div>`;
+      const checked = curAns === i;
+      const tab = i === tabbedIdx ? '0' : '-1';
+      html += `<button type="button" class="choice-opt ${checked?'selected':''}"
+                       role="radio" aria-checked="${checked?'true':'false'}"
+                       tabindex="${tab}"
+                       data-step="${s.id}" data-idx="${i}"
+                       onclick="selectChoice('${s.id}', ${i}, this)"
+                       onkeydown="choiceKey(event, this)">
+        <span class="choice-main">${escapeHtml(o.main)}</span>
+        <span class="choice-sub">${escapeHtml(o.sub)}</span>
+      </button>`;
     });
-    html += `</div>`;
+    html += `</div></fieldset>`;
   }
 
   else if (s.type === 'tokens') {
     const saved = answers[s.id] || '';
+    const tokInputId = 'tokInput';
     html += `<div class="tok-wrap">
+      <label for="${tokInputId}" class="sr-only">Monthly tokens used</label>
       <div class="tok-input-row">
-        <input type="number" id="tokInput" value="${saved}" min="0" step="100000"
+        <input type="number" id="${tokInputId}" value="${saved}" min="0" step="100000"
                placeholder="e.g. 2800000"
-               oninput="answers.tokens=+this.value;validateStep();">
-        <span class="tok-unit">tokens / month</span>
+               aria-describedby="${hintId} tokFallback"
+               oninput="answers.tokens=+this.value;syncTokenPresets();validateStep();">
+        <span class="tok-unit" aria-hidden="true">tokens / month</span>
       </div>
-      <div class="tok-presets">
-        <span style="font-size:11px;color:var(--dim);align-self:center">Quick estimate:</span>
+      <div class="tok-presets" role="group" aria-label="Quick token estimates">
+        <span style="font-size:12px;color:var(--muted);align-self:center" aria-hidden="true">Quick estimate:</span>
         ${[['500K','occasional use',500000],['5M','regular use',5000000],
            ['10M','heavy use',10000000],['50M','power user / team',50000000]]
-          .map(([l,s,v])=>`<span class="tok-preset ${saved==v?'sel':''}"
-            onclick="setTokenPreset(${v},this)">${l}<br><span style="font-size:9px;color:var(--dim)">${s}</span></span>`).join('')}
+          .map(([l,s,v])=>`<button type="button"
+              class="tok-preset ${saved==v?'sel':''}"
+              data-val="${v}"
+              aria-pressed="${saved==v?'true':'false'}"
+              aria-label="Use ${l} tokens per month — ${s}"
+              onclick="setTokenPreset(${v},this)">
+              ${l}<br><span class="tok-preset-sub">${s}</span></button>`).join('')}
       </div>
-      <div class="tok-fallback">Don't have dashboard access? Pick a quick estimate above.</div>
+      <div class="tok-fallback" id="tokFallback">Don't have dashboard access? Pick a quick estimate above.</div>
     </div>`;
   }
 
-  html += `<div class="step-why">💡 Why we ask: ${s.why}</div></div>`;
+  html += `<p class="step-why" id="${whyId}">💡 Why we ask: ${escapeHtml(s.why)}</p></section>`;
   document.getElementById('stepContainer').innerHTML = html;
+
+  // Move keyboard focus to the new step heading so screen-reader users hear the question.
+  const heading = document.getElementById(qId);
+  if (heading) {
+    heading.setAttribute('tabindex', '-1');
+    heading.focus({preventScroll:false});
+  }
 
   // restore validation state
   validateStep();
 }
 
-function selectLikert(id, val, el) {
+function selectLikert(id, val) {
   answers[id] = val;
-  document.querySelectorAll('.likert-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
+  document.querySelectorAll('.likert-opt').forEach((opt, i) => {
+    const btn = opt.querySelector('.likert-btn');
+    if (btn) btn.classList.toggle('selected', i === val);
+  });
   validateStep();
 }
 
 function selectChoice(id, val, el) {
   answers[id] = val;
-  document.querySelectorAll('.choice-opt').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.choice-opt').forEach(b => {
+    b.classList.remove('selected');
+    b.setAttribute('aria-checked', 'false');
+    b.setAttribute('tabindex', '-1');
+  });
   el.classList.add('selected');
+  el.setAttribute('aria-checked', 'true');
+  el.setAttribute('tabindex', '0');
   validateStep();
+}
+
+/* Arrow-key navigation for choice radiogroup (WAI-ARIA radio pattern) */
+function choiceKey(ev, el) {
+  const opts = Array.from(document.querySelectorAll('.choice-opt'));
+  const idx = opts.indexOf(el);
+  let next = idx;
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowRight') next = (idx + 1) % opts.length;
+  else if (ev.key === 'ArrowUp' || ev.key === 'ArrowLeft') next = (idx - 1 + opts.length) % opts.length;
+  else if (ev.key === 'Home') next = 0;
+  else if (ev.key === 'End') next = opts.length - 1;
+  else return;
+  ev.preventDefault();
+  const target = opts[next];
+  const stepId = target.dataset.step;
+  const i      = +target.dataset.idx;
+  selectChoice(stepId, i, target);
+  target.focus();
 }
 
 function setTokenPreset(val, el) {
   answers.tokens = val;
   document.getElementById('tokInput').value = val;
-  document.querySelectorAll('.tok-preset').forEach(p => p.classList.remove('sel'));
-  el.classList.add('sel');
+  syncTokenPresets();
   validateStep();
+}
+
+function syncTokenPresets() {
+  document.querySelectorAll('.tok-preset').forEach(p => {
+    const match = +p.dataset.val === answers.tokens;
+    p.classList.toggle('sel', match);
+    p.setAttribute('aria-pressed', match ? 'true' : 'false');
+  });
 }
 
 function validateStep() {
@@ -847,21 +1007,27 @@ function showInference() {
     { param:'Utilisation', val: inferred.util + '%', reason: inferred.reasons.util, sliderId:'infUtil', min:10, max:100, step:5, current:inferred.util, unit:'%' },
   ];
 
-  document.getElementById('inferGrid').innerHTML = cards.map(c => `
+  document.getElementById('inferGrid').innerHTML = cards.map(c => {
+    const valId = `iv_${c.sliderId||c.param.replace(/\s/g,'')}`;
+    return `
     <div class="infer-card">
-      <div class="infer-param">${c.param}</div>
-      <div class="infer-val" id="iv_${c.sliderId||c.param.replace(/\s/g,'')}">${c.val}</div>
+      <div class="infer-param" id="${valId}_label">${c.param}</div>
+      <div class="infer-val" id="${valId}" aria-live="polite">${c.val}</div>
       <div class="infer-reason">${c.reason}</div>
       ${c.sliderId ? `
       <div class="infer-slider-row">
-        <input type="range" id="${c.sliderId}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.current}"
-               oninput="document.getElementById('iv_${c.sliderId}').textContent=
+        <input type="range" id="${c.sliderId}"
+               min="${c.min}" max="${c.max}" step="${c.step}" value="${c.current}"
+               aria-labelledby="${valId}_label"
+               aria-valuetext="${c.val}"
+               oninput="document.getElementById('${valId}').textContent=
                  (this.id==='infPue'?parseFloat(this.value).toFixed(2):this.value)+'${c.unit}';
+                 this.setAttribute('aria-valuetext', document.getElementById('${valId}').textContent);
                  inferred.${c.sliderId==='infGrid'?'grid':c.sliderId==='infOut'?'outPct':c.sliderId==='infPue'?'pue':'util'}=+this.value;">
-        <span class="infer-slider-lbl" style="font-size:10px;color:var(--amber)">override</span>
+        <span class="infer-slider-lbl" aria-hidden="true">override</span>
       </div>` : ''}
     </div>
-  `).join('');
+  `;}).join('');
 }
 
 function showCalc() {
@@ -1037,17 +1203,17 @@ function recalc() {
   // Assumptions table
   const rows = [
     ['Monthly tokens', fmt(p.tokens/1e6,2)+'M', 'Every output scales linearly with this number.', 'Personal AI usage dashboard', null, 'l'],
-    ['Output token %', fmt(p.outPct*100,0)+'%', 'Shifts energy significantly — output costs ~5× more per token than input.', 'Survey Q4 + Patterson et al. 2021', 'https://arxiv.org/abs/2104.10350', 'm'],
-    ['Input energy', r.m.input+' kWh/kTok', 'Sets raw energy cost for prompt processing (parallel prefill stage).', 'Couch 2026 (Claude); TokenPowerBench arxiv:2512.03024', 'https://simonpcouch.com/blog/2026-01-20-cc-impact/', 'm'],
-    ['Output energy', r.m.output+' kWh/kTok', 'Sets raw energy cost for token generation (sequential — hence costlier).', 'Luccioni et al. 2023 — BLOOM carbon footprint', 'https://arxiv.org/abs/2211.02001', 'm'],
+    ['Output token %', fmt(p.outPct*100,0)+'%', 'Shifts energy significantly — output costs ~5× more per token than input due to autoregressive decoding vs parallel prefill.', 'Luccioni et al. 2023 — Power Hungry Processing', 'https://arxiv.org/abs/2311.16863', 'm'],
+    ['Input energy', r.m.input+' kWh/kTok', 'Sets raw energy cost for prompt processing (parallel prefill stage).', 'Couch 2026 (napkin math, extrapolated from Epoch AI ChatGPT analysis)', 'https://simonpcouch.com/blog/2026-01-20-cc-impact/', 'h'],
+    ['Output energy', r.m.output+' kWh/kTok', 'Sets raw energy cost for token generation (sequential — hence costlier).', 'Couch 2026 + Niu et al. 2025 — TokenPowerBench', 'https://arxiv.org/abs/2512.03024', 'h'],
     ['GPU type', r.gpu.label, 'Determines TDP and throughput — two key inputs to energy per token.', 'Spheron AI Inference Guide 2026; OpenMetal H100 vs A100', 'https://www.spheron.network/blog/ai-inference-power-electricity-cost-2026/', 'm'],
     ['Utilisation', fmt(p.util*100,0)+'%', 'Idle power waste: energy/useful-token scales as 1 ÷ utilisation.', 'Epoch AI — How much energy does ChatGPT use?', 'https://epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use', 'h'],
     ['PUE', p.pue, 'Multiplies IT energy by data centre overhead (cooling, networking). PUE 1.4 = 40% extra.', 'Uptime Institute Global Data Center Survey 2023', 'https://uptimeinstitute.com/resources/research-and-reports/uptime-institute-global-data-center-survey-results-2023', 'h'],
     ['Grid intensity', p.grid+' g/kWh', 'Converts kWh → kg CO₂. Most variable factor — coal vs hydro = up to 50× difference.', 'ONS Brazil 2024; Electricity Maps', 'https://www.electricitymaps.com/', 'm'],
     ['Embodied CO₂/GPU', p.gpuCo2+' kg', 'Manufacturing carbon amortised over GPU lifetime. Small vs operational but non-zero.', 'Dell/Nvidia LCA product carbon footprint estimates', 'https://www.dell.com/en-us/dt/corporate/social-impact/advancing-sustainability/climate-action/product-carbon-footprints.htm', 'h'],
-    ['Car equivalent', '170 g/km', 'Makes CO₂ tangible — familiar reference for stakeholders.', 'European Environment Agency — avg car emissions 2023', 'https://www.eea.europa.eu/en/analysis/indicators/average-co2-emissions-from-new', 'l'],
-    ['Tree absorption', '22 kg/yr', 'Converts total CO₂ to "trees to offset" — accessible for non-technical audiences.', 'IPCC AR6 WG3 — forest carbon sequestration', 'https://www.ipcc.ch/report/ar6/wg3/', 'l'],
-    ['Carbon price', '$50/t', 'Gives CO₂ a monetary value — useful for budget and procurement conversations.', 'World Bank Carbon Pricing Dashboard 2024', 'https://carbonpricingdashboard.worldbank.org/', 'm'],
+    ['Car equivalent', '170 g/km', 'Makes CO₂ tangible — familiar reference for stakeholders. Approximate global passenger-car fleet average; EEA reports ~106 g/km for new EU cars 2023.', 'IEA/industry fleet-average estimate', 'https://www.eea.europa.eu/en/analysis/indicators/co2-performance-of-new-passenger', 'l'],
+    ['Tree absorption', '22 kg/yr', 'Converts total CO₂ to "trees to offset" — accessible for non-technical audiences. Varies 11–50 kg/yr by species, age, and biome.', 'Common mid-range estimate (EPA/USDA Forest Service)', 'https://www.fs.usda.gov/research/treesearch', 'l'],
+    ['Carbon price', '$50/t', 'Gives CO₂ a monetary value — useful for budget and procurement conversations. Mid-range; actual ETS prices currently span ~$30–90/t.', 'World Bank State and Trends of Carbon Pricing 2024', 'https://carbonpricingdashboard.worldbank.org/', 'm'],
   ];
   const bmap={l:'bl',m:'bm',h:'bh'}, blab={l:'LOW',m:'MED',h:'HIGH'};
   document.getElementById('aBody').innerHTML = rows.map(([n,v,contrib,src,url,u]) =>
@@ -1060,8 +1226,10 @@ function recalc() {
 
 function updateGridHighlight() {
   const v = +document.getElementById('grid').value;
-  document.querySelectorAll('#locTbl tr').forEach(tr => {
-    tr.classList.toggle('active-loc', Math.abs(+tr.dataset.g - v) < 15);
+  document.querySelectorAll('#locTbl tr[role="option"]').forEach(tr => {
+    const match = Math.abs(+tr.dataset.g - v) < 15;
+    tr.classList.toggle('active-loc', match);
+    tr.setAttribute('aria-selected', match ? 'true' : 'false');
   });
 }
 
@@ -1073,23 +1241,143 @@ function onToolChange() {
 }
 
 function toggleAdv() {
-  const s = document.getElementById('advSec');
-  s.classList.toggle('open');
-  document.querySelector('.tog').textContent = s.classList.contains('open')
-    ? '⚙ Hide embodied carbon settings' : '⚙ Show embodied carbon settings';
+  const s   = document.getElementById('advSec');
+  const btn = document.getElementById('togBtn');
+  const open = !s.classList.contains('open');
+  s.classList.toggle('open', open);
+  btn.textContent = open ? '⚙ Hide embodied carbon settings' : '⚙ Show embodied carbon settings';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 
-document.querySelectorAll('#locTbl tr').forEach(tr => {
-  tr.addEventListener('click', () => {
-    document.getElementById('grid').value = tr.dataset.g;
-    document.getElementById('gridLbl').textContent = tr.dataset.g + ' g CO₂/kWh';
-    updateGridHighlight();
-    recalc();
+function pickLocRow(tr) {
+  document.getElementById('grid').value = tr.dataset.g;
+  document.getElementById('gridLbl').textContent = tr.dataset.g + ' g CO₂/kWh';
+  updateGridHighlight();
+  recalc();
+}
+document.querySelectorAll('#locTbl tr[role="option"]').forEach(tr => {
+  tr.addEventListener('click', () => pickLocRow(tr));
+  tr.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      ev.preventDefault();
+      pickLocRow(tr);
+    }
   });
 });
 
+// ═══════════════════════════════════════════════════════════
+// SHAREABLE LINK
+// ═══════════════════════════════════════════════════════════
+// Compact keys keep the URL short.
+const SHARE_KEYS = {
+  t: 'tool',       m: 'claudeModel', M: 'fuelixModel',
+  n: 'tokens',     o: 'outPct',      g: 'gpu',
+  u: 'util',       p: 'pue',         G: 'grid',
+  c: 'gpuCo2',     L: 'gpuLife',     T: 'gpuTok',
+};
+
+function b64urlEncode(str) {
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64urlDecode(str) {
+  str = str.replace(/-/g,'+').replace(/_/g,'/');
+  while (str.length % 4) str += '=';
+  return decodeURIComponent(escape(atob(str)));
+}
+
+function serializeState() {
+  const state = {};
+  for (const [short, full] of Object.entries(SHARE_KEYS)) {
+    const el = document.getElementById(full);
+    if (!el) continue;
+    // Skip the inactive tool's model dropdown
+    if (full === 'claudeModel' && document.getElementById('tool').value !== 'claude') continue;
+    if (full === 'fuelixModel' && document.getElementById('tool').value !== 'other')  continue;
+    state[short] = el.value;
+  }
+  return state;
+}
+
+function buildShareUrl() {
+  const state = serializeState();
+  const payload = b64urlEncode(JSON.stringify(state));
+  const base = location.origin + location.pathname;
+  return `${base}#s=${payload}`;
+}
+
+async function shareResults() {
+  const url   = buildShareUrl();
+  const toast = document.getElementById('shareToast');
+  try {
+    await navigator.clipboard.writeText(url);
+    toast.textContent = '✓ Link copied to clipboard';
+  } catch (err) {
+    // Fallback: surface the URL so the user can copy manually
+    window.prompt('Copy this link:', url);
+    toast.textContent = '↗ Link ready to copy';
+  }
+  toast.classList.add('show');
+  clearTimeout(shareResults._t);
+  shareResults._t = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function applyHashState() {
+  const m = location.hash.match(/#s=([^&]+)/);
+  if (!m) return false;
+  let state;
+  try {
+    state = JSON.parse(b64urlDecode(m[1]));
+  } catch (e) {
+    console.warn('Could not parse shared state:', e);
+    return false;
+  }
+
+  // Map back into calculator inputs
+  for (const [short, val] of Object.entries(state)) {
+    const fullId = SHARE_KEYS[short];
+    if (!fullId) continue;
+    const el = document.getElementById(fullId);
+    if (!el) continue;
+    el.value = val;
+  }
+
+  // Make sure the correct tool's model wrap is visible before recalc
+  onToolChange();
+
+  // Sync display labels for sliders
+  const sync = (id, fmtFn) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const lblId = id + 'Lbl';
+    const lbl   = document.getElementById(lblId);
+    if (lbl) lbl.textContent = fmtFn(el.value);
+  };
+  sync('outPct',  v => v + '%');
+  sync('util',    v => v + '%');
+  sync('pue',     v => parseFloat(v).toFixed(2));
+  sync('grid',    v => v + ' g CO₂/kWh');
+  sync('gpuCo2',  v => v + ' kg');
+  sync('gpuLife', v => v + ' yrs');
+  sync('gpuTok',  v => v + 'M');
+
+  // Update output-fraction split bar
+  const op = +document.getElementById('outPct').value;
+  document.getElementById('splitIn').style.width = (100 - op) + '%';
+
+  updateGridHighlight();
+  recalc();
+  return true;
+}
+
 // ── boot ──
-renderStep(0);
+if (applyHashState()) {
+  // Skip the wizard — recipient lands directly on results
+  document.getElementById('wizard').style.display = 'none';
+  document.getElementById('calcScreen').style.display = 'block';
+} else {
+  renderStep(0);
+}
 </script>
 </body>
 </html>

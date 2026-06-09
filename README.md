@@ -2,7 +2,7 @@
 
 A browser-based tool that estimates the monthly carbon footprint of your personal AI usage — no installation, no backend, no data sent anywhere.
 
-**[→ Try it live](https://bvillav-a11y.github.io/ai-carbon-calculator)** 
+**[→ Try it live](https://bvillav-a11y.github.io/ai-carbon-calculator)**
 
 ---
 
@@ -15,6 +15,10 @@ Most AI carbon footprint tools either require technical knowledge to operate or 
 3. **A full calculator** displays a live equation trace, confidence bars, and a cited assumptions table so you can see — and challenge — every number
 
 Outputs include total kg CO₂, car-equivalent km driven, trees needed to offset, and carbon cost in USD at $50/tonne.
+
+A **Share results** button on the calculator screen copies a URL that encodes the full calculator state into the hash (`#s=...`). Opening that URL on another machine lands directly on the calculator with the same numbers loaded — no backend, no tracking, just `location.hash`.
+
+The interface is built to **WCAG 2.1 AA**: semantic radio groups for the survey, full keyboard navigation (Tab + arrow keys), ARIA live regions on the wizard progress and results, and focus rings on every interactive control.
 
 ---
 
@@ -36,7 +40,7 @@ This tool makes those factors visible and personal.
 Download or clone this repo, open `index.html` in any modern browser, and follow the 8-question wizard. No dependencies, no build step, no internet connection required (except for loading the Google Font, which degrades gracefully).
 
 ```bash
-git clone https://github.com/yourname/ai-carbon-calculator
+git clone https://github.com/bvillav-a11y/ai-carbon-calculator
 cd ai-carbon-calculator
 open index.html        # macOS
 # or just double-click index.html on Windows/Linux
@@ -58,9 +62,9 @@ tokens → raw energy (kWh) → utilisation-adjusted energy
 
 Model-specific energy figures are derived from published literature:
 
-- **Claude models (Haiku / Sonnet / Opus):** Simon P. Couch (2026) — *Electricity use of AI coding agents* — the closest published measurement of per-token energy for Claude specifically, derived from Claude Code session logs. Input: ~390 Wh/MTok, Output: ~1950 Wh/MTok for Sonnet. Haiku and Opus scaled proportionally.
-- **Other LLMs / internal tools:** Cañas et al. (2024), *TokenPowerBench* (arxiv:2512.03024) — cross-model GPU benchmarks measuring actual energy per token across LLaMA, Mistral, and Qwen model families on H100 hardware.
-- **Output vs input cost ratio:** Luccioni et al. (2023), *Power Hungry Processing* (arxiv:2211.02001) — output tokens are generated sequentially (autoregressive decoding) vs input tokens processed in parallel (prefill), making output ~5× more energy-intensive per token.
+- **Claude models (Haiku / Sonnet / Opus):** Simon P. Couch (2026) — *Electricity use of AI coding agents* ([blog post](https://simonpcouch.com/blog/2026-01-20-cc-impact/)) — napkin-math estimates extrapolated from Epoch AI's ChatGPT 4o analysis and applied to Sonnet 4.5 / Opus 4.5. Maximum-context scenario: input ~390 Wh/MTok, output ~1950 Wh/MTok. Couch explicitly notes Opus is likely larger but more efficiently served, so he treats them as the same ballpark. We scale Haiku and Opus from Sonnet, which is itself approximate.
+- **Other LLMs / internal tools:** Niu et al. (2025), *TokenPowerBench: Benchmarking the Power Consumption of LLM Inference* (arxiv:2512.03024) — measures per-token energy across Llama, Falcon, Qwen, and Mistral model families on H100 hardware, from 1B up to Llama-3 405B.
+- **Output vs input cost ratio:** The ~5× output-to-input energy ratio reflects the well-known asymmetry between parallel prefill (input) and sequential autoregressive decoding (output). The specific ratio used here is consistent with Luccioni et al. (2023), *Power Hungry Processing: Watts Driving the Cost of AI Deployment?* (arxiv:2311.16863) and with systems-paper measurements (e.g. Splitwise, DistServe).
 
 ### Hardware
 
@@ -86,9 +90,9 @@ Dell / Nvidia product carbon footprint lifecycle assessment estimates. H100 ≈ 
 
 | Metric | Value | Source |
 |---|---|---|
-| Car emissions | 170 g CO₂/km | European Environment Agency 2023 |
-| Tree absorption | 22 kg CO₂/year | IPCC AR6 WG3 |
-| Carbon price | $50/tonne | World Bank Carbon Pricing Dashboard 2024 |
+| Car emissions | 170 g CO₂/km | Approximate global passenger-car fleet average. (EEA reports ~106 g/km for *new* EU cars in 2023, but the existing global fleet — what most people picture when they think "car" — runs higher, closer to 170 g/km.) |
+| Tree absorption | 22 kg CO₂/year | Commonly cited mid-range figure; varies 11–50 kg/yr by species, age, and biome. Frequently attributed to US EPA / USDA Forest Service rather than IPCC. |
+| Carbon price | $50/tonne | Order-of-magnitude reference roughly in line with mid-2020s ETS prices and social-cost-of-carbon estimates. The World Bank *State and Trends of Carbon Pricing 2024* dashboard tracks the actual range (often $30–$90/t). |
 
 ---
 
@@ -124,10 +128,10 @@ Corrections, better energy-per-token measurements, and additional model support 
 
 Built during a brainstorm about AI sustainability at work. Methodology grounded in:
 
-- Patterson et al. (2021) — *Carbon Considerations for Large Language Models* (arxiv:2104.10350)
-- Luccioni et al. (2023) — *Power Hungry Processing* (arxiv:2211.02001)
-- Couch (2026) — *Electricity use of AI coding agents*
-- Cañas et al. (2024) — *TokenPowerBench* (arxiv:2512.03024)
+- Patterson et al. (2021) — *Carbon Emissions and Large Neural Network Training* (arxiv:2104.10350) — foundational methodology, focused on training rather than inference
+- Luccioni et al. (2023) — *Power Hungry Processing: Watts Driving the Cost of AI Deployment?* (arxiv:2311.16863)
+- Couch (2026) — *Electricity use of AI coding agents* ([simonpcouch.com](https://simonpcouch.com/blog/2026-01-20-cc-impact/))
+- Niu et al. (2025) — *TokenPowerBench: Benchmarking the Power Consumption of LLM Inference* (arxiv:2512.03024)
 - Ligozat et al. (2022) — *Unraveling the Hidden Environmental Impacts of AI Solutions*
 
 ---
