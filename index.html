@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Carbon Calculator · Telus Digital</title>
+<title>AI Carbon Calculator</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
@@ -312,7 +312,7 @@ input[type=number]{font-family:var(--mono);}
 ══════════════════════════════════════════ -->
 <div id="wizard">
 <div class="wiz-shell">
-  <div class="wiz-eye">// AI Carbon Calculator · Telus Digital</div>
+  <div class="wiz-eye">// AI Carbon Calculator</div>
   <h1 class="wiz-title">Let's profile your AI usage</h1>
   <p class="wiz-sub">8 quick questions. No technical knowledge needed — we'll infer the parameters from your answers.</p>
 
@@ -355,7 +355,7 @@ input[type=number]{font-family:var(--mono);}
 ══════════════════════════════════════════ -->
 <div id="calcScreen" style="display:none;">
 <div class="hdr">
-  <div class="hdr-eye">// Telus Digital · AI Carbon Impact Calculator</div>
+  <div class="hdr-eye">// AI Carbon Impact Calculator</div>
   <h1>Your Monthly AI Carbon Footprint</h1>
   <p>Results calibrated from your survey. All inferred parameters are editable below.</p>
   <span class="hdr-retake" onclick="retakeSurvey()">↺ Retake survey to recalibrate</span>
@@ -398,7 +398,7 @@ input[type=number]{font-family:var(--mono);}
       <div class="igroup" style="margin-top:8px">
         <label>Monthly tokens</label>
         <input type="number" id="tokens" value="2800000" min="1000" step="100000" oninput="recalc()">
-        <div class="hint">From your Telus AI usage dashboard.</div>
+        <div class="hint">From your AI tool's personal usage dashboard.</div>
       </div>
 
       <div class="igroup" style="margin-top:8px">
@@ -569,7 +569,7 @@ const STEPS = [
   {
     id: 'tokens',
     q: 'How many tokens did you personally use last month?',
-    hint: 'Check your personal usage in the Telus AI dashboard — look for your own account\'s token count, not the team total. If you can\'t find it, use the quick estimates below.',
+    hint: 'Check your personal usage in the AI tool\'s dashboard — look for your own account\'s token count. If you can\'t find it, use the quick estimates below.',
     why: 'This is the only directly measured input — everything else is estimated. Personal usage is what you have reliable access to, and it scales linearly with every output.',
     type: 'tokens'
   },
@@ -690,8 +690,8 @@ function renderStep(idx) {
       </div>
       <div class="tok-presets">
         <span style="font-size:11px;color:var(--dim);align-self:center">Quick estimate:</span>
-        ${[['~100K','few queries/day',100000],['~500K','regular team use',500000],
-           ['~2.8M','Telus dashboard default',2800000],['~10M','heavy/team use',10000000]]
+        ${[['500K','occasional use',500000],['5M','regular use',5000000],
+           ['10M','heavy use',10000000],['50M','power user / team',50000000]]
           .map(([l,s,v])=>`<span class="tok-preset ${saved==v?'sel':''}"
             onclick="setTokenPreset(${v},this)">${l}<br><span style="font-size:9px;color:var(--dim)">${s}</span></span>`).join('')}
       </div>
@@ -1035,7 +1035,7 @@ function recalc() {
 
   // Assumptions table
   const rows = [
-    ['Monthly tokens', fmt(p.tokens/1e6,2)+'M', 'Every output scales linearly with this number.', 'Telus AI usage dashboard', null, 'l'],
+    ['Monthly tokens', fmt(p.tokens/1e6,2)+'M', 'Every output scales linearly with this number.', 'Personal AI usage dashboard', null, 'l'],
     ['Output token %', fmt(p.outPct*100,0)+'%', 'Shifts energy significantly — output costs ~5× more per token than input.', 'Survey Q4 + Patterson et al. 2021', 'https://arxiv.org/abs/2104.10350', 'm'],
     ['Input energy', r.m.input+' kWh/kTok', 'Sets raw energy cost for prompt processing (parallel prefill stage).', 'Couch 2026 (Claude); TokenPowerBench arxiv:2512.03024', 'https://simonpcouch.com/blog/2026-01-20-cc-impact/', 'm'],
     ['Output energy', r.m.output+' kWh/kTok', 'Sets raw energy cost for token generation (sequential — hence costlier).', 'Luccioni et al. 2023 — BLOOM carbon footprint', 'https://arxiv.org/abs/2211.02001', 'm'],
