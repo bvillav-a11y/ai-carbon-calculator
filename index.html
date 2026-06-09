@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Carbon Calculator · Telus Digital</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --surface2:  #1c2330;
+  --border:    #30363d;
+  --green:     #3fb950;
+  --green-dim: #122d1a;
+  --amber:     #e3b341;
+  --amber-dim: #3d2f0a;
+  --red:       #f85149;
+  --red-dim:   #3d0f0d;
+  --blue:      #58a6ff;
+  --purple:    #bc8cff;
+  --text:      #e6edf3;
+  --muted:     #8b949e;
+  --dim:       #484f58;
+  --mono:      'Space Mono', monospace;
+  --sans:      'Space Grotesk', sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding:0;}
+
+/* ══════════════════════════════════════════
+   WIZARD
+══════════════════════════════════════════ */
+#wizard {
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:32px 20px;
+}
+
+.wiz-shell {
+  width:100%;
+  max-width:560px;
+}
+
+.wiz-eye {
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--green);margin-bottom:6px;
+}
+
+.wiz-title {
+  font-size:22px;font-weight:700;margin-bottom:4px;
+}
+
+.wiz-sub {
+  font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.5;
+}
+
+/* progress */
+.prog-bar {
+  height:3px;background:var(--border);border-radius:2px;margin-bottom:28px;overflow:hidden;
+}
+.prog-fill {
+  height:100%;background:var(--green);border-radius:2px;transition:width .4s ease;
+}
+.prog-label {
+  font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:8px;
+  display:flex;justify-content:space-between;
+}
+
+/* step card */
+.step-card {
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:28px;margin-bottom:16px;
+  animation:fadeUp .3s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.step-q {
+  font-size:17px;font-weight:600;line-height:1.4;margin-bottom:6px;
+}
+.step-hint {
+  font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.5;
+}
+.step-why {
+  font-size:11px;color:var(--dim);margin-top:14px;padding-top:10px;
+  border-top:1px solid var(--border);line-height:1.5;font-style:italic;
+}
+
+/* likert */
+.likert {
+  display:flex;gap:8px;
+}
+.likert-opt {
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
+  cursor:pointer;
+}
+.likert-opt input{display:none;}
+.likert-btn {
+  width:100%;padding:10px 4px;border-radius:7px;border:1px solid var(--border);
+  background:var(--surface2);font-family:var(--mono);font-size:11px;
+  color:var(--muted);text-align:center;cursor:pointer;transition:all .18s;
+  line-height:1.3;
+}
+.likert-opt input:checked ~ .likert-btn,
+.likert-btn.selected {
+  border-color:var(--green);background:var(--green-dim);color:var(--green);
+}
+.likert-lbl {
+  font-size:10px;color:var(--dim);text-align:center;line-height:1.3;
+}
+
+/* choice grid */
+.choice-grid {
+  display:grid;gap:8px;
+}
+.choice-grid.cols2{grid-template-columns:1fr 1fr;}
+.choice-grid.cols1{grid-template-columns:1fr;}
+
+.choice-opt {
+  background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+  padding:12px 14px;cursor:pointer;transition:all .18s;
+  display:flex;flex-direction:column;gap:3px;
+}
+.choice-opt:hover{border-color:var(--muted);}
+.choice-opt.selected{border-color:var(--green);background:var(--green-dim);}
+.choice-main{font-size:13px;font-weight:600;}
+.choice-sub{font-size:11px;color:var(--muted);line-height:1.4;}
+.choice-opt.selected .choice-sub{color:var(--green);opacity:.8;}
+
+/* token input */
+.tok-wrap{display:flex;flex-direction:column;gap:10px;}
+.tok-input-row{display:flex;gap:10px;align-items:center;}
+.tok-input-row input{
+  flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+  color:var(--text);font-family:var(--mono);font-size:18px;padding:12px 14px;
+  outline:none;transition:border-color .2s;
+}
+.tok-input-row input:focus{border-color:var(--green);}
+.tok-unit{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap;}
+.tok-presets{display:flex;gap:8px;flex-wrap:wrap;}
+.tok-preset{
+  background:var(--surface2);border:1px solid var(--border);border-radius:5px;
+  padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--muted);
+  cursor:pointer;transition:all .15s;
+}
+.tok-preset:hover,.tok-preset.sel{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+.tok-fallback{font-size:11px;color:var(--dim);margin-top:4px;}
+
+/* nav */
+.wiz-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.btn {
+  padding:10px 22px;border-radius:7px;font-family:var(--sans);font-size:13px;
+  font-weight:600;cursor:pointer;transition:all .2s;border:none;
+}
+.btn-back{background:none;border:1px solid var(--border);color:var(--muted);}
+.btn-back:hover{border-color:var(--muted);color:var(--text);}
+.btn-next{background:var(--green);color:#0d1117;}
+.btn-next:hover{filter:brightness(1.1);}
+.btn-next:disabled{background:var(--border);color:var(--dim);cursor:not-allowed;}
+.btn-calc{background:var(--green);color:#0d1117;padding:12px 28px;font-size:14px;}
+.btn-calc:hover{filter:brightness(1.1);}
+
+/* ══════════════════════════════════════════
+   INFERENCE SUMMARY (between wizard & calc)
+══════════════════════════════════════════ */
+#inferScreen{display:none;min-height:100vh;padding:32px 20px;
+  display:none;flex-direction:column;align-items:center;justify-content:center;}
+
+.infer-shell{width:100%;max-width:700px;}
+.infer-title{font-size:20px;font-weight:700;margin-bottom:4px;}
+.infer-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5;}
+
+.infer-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+
+.infer-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:14px 16px;
+}
+.infer-param{font-size:11px;color:var(--muted);font-family:var(--mono);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.infer-val{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.infer-reason{font-size:11px;color:var(--dim);line-height:1.5;}
+
+.infer-slider-row{display:flex;align-items:center;gap:10px;margin-top:6px;}
+.infer-slider-row input[type=range]{flex:1;margin:0;}
+.infer-slider-lbl{font-family:var(--mono);font-size:11px;color:var(--amber);min-width:52px;text-align:right;}
+
+.infer-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:8px;}
+.btn-redo{background:none;border:1px solid var(--border);color:var(--muted);padding:9px 18px;
+  border-radius:7px;font-family:var(--sans);font-size:12px;cursor:pointer;transition:all .2s;}
+.btn-redo:hover{border-color:var(--muted);color:var(--text);}
+
+/* ══════════════════════════════════════════
+   CALCULATOR
+══════════════════════════════════════════ */
+#calcScreen{display:none;padding:28px 20px 72px;}
+
+.hdr{max-width:920px;margin:0 auto 24px;border-bottom:1px solid var(--border);padding-bottom:18px;}
+.hdr-eye{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);margin-bottom:6px;}
+.hdr h1{font-size:24px;font-weight:700;line-height:1.2;margin-bottom:4px;}
+.hdr p{color:var(--muted);font-size:13px;line-height:1.5;max-width:560px;}
+.hdr-retake{font-size:11px;color:var(--blue);cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block;}
+
+.wrap{max-width:920px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.full{grid-column:1/-1;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;}
+.clabel{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.clabel::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.igroup{margin-bottom:12px;}
+.igroup:last-child{margin-bottom:0;}
+.irow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+label{font-size:13px;font-weight:500;}
+.ival{font-family:var(--mono);font-size:12px;color:var(--amber);}
+.surveyed{font-family:var(--mono);font-size:9px;color:var(--green);
+  background:var(--green-dim);padding:2px 5px;border-radius:3px;margin-left:6px;}
+
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;
+  background:var(--border);border-radius:2px;outline:none;cursor:pointer;margin:3px 0;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;
+  border-radius:50%;background:var(--amber);cursor:pointer;transition:transform .1s;}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.3);}
+
+input[type=number],select{background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;color:var(--text);font-family:var(--sans);font-size:13px;
+  padding:7px 10px;width:100%;outline:none;transition:border-color .2s;}
+input[type=number]:focus,select:focus{border-color:var(--amber);}
+input[type=number]{font-family:var(--mono);}
+.hint{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.5;}
+
+.split-bar{display:flex;height:7px;border-radius:4px;overflow:hidden;margin:5px 0;}
+.split-in{background:var(--blue);transition:width .2s;}
+.split-out{background:var(--purple);flex:1;}
+.split-legend{display:flex;gap:14px;font-size:10px;color:var(--muted);}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+
+/* results */
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+.rcell{background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+  padding:12px 8px;text-align:center;}
+.rnum{font-family:var(--mono);font-size:19px;font-weight:700;line-height:1;margin-bottom:3px;}
+.runit{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+.rlbl{font-size:10px;color:var(--dim);}
+.cg{color:var(--green);}.ca{color:var(--amber);}.cb{color:var(--blue);}.cr{color:var(--red);}
+
+.pertok-row{background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+  padding:11px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+
+.eqbox{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:2.1;color:var(--muted);}
+.eqbox .ev{color:var(--green);}
+.eqbox .elbl{color:var(--blue);font-size:10px;}
+.eqbox .eop{color:var(--dim);}
+
+.cbar-wrap{margin-bottom:8px;}
+.cbar-top{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px;}
+.cbar{height:4px;background:var(--border);border-radius:3px;overflow:hidden;}
+.cbar-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+
+.cmp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.cmp-cell{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:12px;text-align:center;}
+.cmp-name{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.cmp-val{font-family:var(--mono);font-size:16px;font-weight:700;}
+.cmp-sub{font-size:10px;color:var(--dim);margin-top:2px;}
+
+.atbl{width:100%;border-collapse:collapse;font-size:12px;}
+.atbl th{text-align:left;color:var(--muted);font-weight:500;padding:6px 8px;
+  border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;
+  text-transform:uppercase;letter-spacing:.08em;}
+.atbl td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--muted);vertical-align:top;}
+.atbl td:first-child{color:var(--text);font-weight:500;}
+.atbl td:nth-child(2){font-family:var(--mono);color:var(--green);}
+.atbl td.contrib{color:var(--muted);font-size:11px;line-height:1.5;}
+.atbl a{color:var(--blue);text-decoration:none;font-size:10px;font-family:var(--mono);}
+.atbl a:hover{text-decoration:underline;}
+
+.badge{display:inline-block;padding:2px 5px;border-radius:3px;
+  font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.05em;}
+.bl{background:var(--green-dim);color:var(--green);}
+.bm{background:var(--amber-dim);color:var(--amber);}
+.bh{background:var(--red-dim);color:var(--red);}
+
+.tog{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);
+  cursor:pointer;font-family:var(--sans);font-size:11px;padding:5px 10px;
+  transition:all .2s;margin-top:8px;}
+.tog:hover{border-color:var(--green);color:var(--green);}
+.adv{display:none;margin-top:10px;}
+.adv.open{display:block;}
+.subdiv{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;
+  letter-spacing:.1em;margin:8px 0 6px;}
+
+.loc-tbl{width:100%;font-size:12px;border-collapse:collapse;}
+.loc-tbl td{padding:5px 0;border-bottom:1px solid var(--border);}
+.loc-tbl td:last-child{font-family:var(--mono);text-align:right;}
+.loc-tbl tr.active-loc td{color:var(--green);}
+.loc-tbl tr{cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     WIZARD SCREEN
+══════════════════════════════════════════ -->
+<div id="wizard">
+<div class="wiz-shell">
+  <div class="wiz-eye">// AI Carbon Calculator · Telus Digital</div>
+  <h1 class="wiz-title">Let's profile your AI usage</h1>
+  <p class="wiz-sub">8 quick questions. No technical knowledge needed — we'll infer the parameters from your answers.</p>
+
+  <div class="prog-label">
+    <span id="stepLabel">Question 1 of 8</span>
+    <span id="stepPct">0%</span>
+  </div>
+  <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+
+  <div id="stepContainer"></div>
+
+  <div class="wiz-nav">
+    <button class="btn btn-back" id="btnBack" onclick="wizBack()" style="visibility:hidden">← Back</button>
+    <button class="btn btn-next" id="btnNext" onclick="wizNext()" disabled>Next →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     INFERENCE SUMMARY SCREEN
+══════════════════════════════════════════ -->
+<div id="inferScreen" style="display:none;min-height:100vh;padding:40px 20px;
+  display:none;align-items:center;justify-content:center;flex-direction:column;">
+<div class="infer-shell">
+  <div class="wiz-eye">// Survey complete</div>
+  <h2 class="infer-title">Here's what we inferred from your answers</h2>
+  <p class="infer-sub">Each parameter was derived from your responses. You can fine-tune any value before running the calculator — the slider turns amber when you override a survey result.</p>
+
+  <div class="infer-grid" id="inferGrid"></div>
+
+  <div class="infer-actions">
+    <button class="btn btn-redo" onclick="retakeSurvey()">↺ Retake survey</button>
+    <button class="btn btn-calc" onclick="showCalc()">Calculate my impact →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CALCULATOR SCREEN
+══════════════════════════════════════════ -->
+<div id="calcScreen" style="display:none;">
+<div class="hdr">
+  <div class="hdr-eye">// Telus Digital · AI Carbon Impact Calculator</div>
+  <h1>Your Monthly AI Carbon Footprint</h1>
+  <p>Results calibrated from your survey. All inferred parameters are editable below.</p>
+  <span class="hdr-retake" onclick="retakeSurvey()">↺ Retake survey to recalibrate</span>
+</div>
+
+<div class="wrap">
+
+  <!-- LEFT -->
+  <div>
+    <div class="card">
+      <div class="clabel">Model & usage</div>
+
+      <div class="igroup">
+        <label>AI tool</label>
+        <select id="tool" onchange="onToolChange()">
+          <option value="claude">Claude (Anthropic)</option>
+          <option value="fuelix">FuelIX (Telus internal)</option>
+        </select>
+      </div>
+
+      <div class="igroup" id="claudeModelWrap">
+        <label>Claude model</label>
+        <select id="claudeModel" onchange="recalc()">
+          <option value="haiku">Haiku — fast / light tasks</option>
+          <option value="sonnet" selected>Sonnet — balanced</option>
+          <option value="opus">Opus — complex reasoning</option>
+          <option value="mix">Mix / unknown</option>
+        </select>
+      </div>
+
+      <div class="igroup" id="fuelixModelWrap" style="display:none">
+        <label>FuelIX model tier</label>
+        <select id="fuelixModel" onchange="recalc()">
+          <option value="fuelix_small">Small / fine-tuned (~7B)</option>
+          <option value="fuelix_medium" selected>Medium (~13–35B)</option>
+          <option value="fuelix_large">Large (~70B+)</option>
+        </select>
+      </div>
+
+      <div class="igroup" style="margin-top:8px">
+        <label>Monthly tokens</label>
+        <input type="number" id="tokens" value="2800000" min="1000" step="100000" oninput="recalc()">
+        <div class="hint">From your Telus AI usage dashboard.</div>
+      </div>
+
+      <div class="igroup" style="margin-top:8px">
+        <div class="irow">
+          <label>Output token fraction <span class="surveyed">from survey</span></label>
+          <span class="ival" id="outPctLbl">75%</span>
+        </div>
+        <input type="range" id="outPct" min="5" max="95" value="75"
+               oninput="document.getElementById('outPctLbl').textContent=this.value+'%';
+                        document.getElementById('splitIn').style.width=(100-this.value)+'%';
+                        recalc();">
+        <div class="split-bar">
+          <div class="split-in" id="splitIn" style="width:25%"></div>
+          <div class="split-out"></div>
+        </div>
+        <div class="split-legend">
+          <span><span class="dot" style="background:var(--blue)"></span>Input — cheaper, parallel</span>
+          <span><span class="dot" style="background:var(--purple)"></span>Output — ~5× costlier</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="clabel">Hardware</div>
+
+      <div class="igroup">
+        <label>GPU type <span class="surveyed">from survey</span></label>
+        <select id="gpu" onchange="recalc()">
+          <option value="h100">NVIDIA H100 SXM5 (700W) — frontier cloud</option>
+          <option value="a100" selected>NVIDIA A100 SXM4 (400W) — common cloud</option>
+          <option value="a100pcie">NVIDIA A100 PCIe (300W)</option>
+          <option value="unknown">Unknown / mixed (A100 proxy)</option>
+        </select>
+      </div>
+
+      <div class="igroup">
+        <div class="irow">
+          <label>Hardware utilisation <span class="surveyed">from survey</span></label>
+          <span class="ival" id="utilLbl">60%</span>
+        </div>
+        <input type="range" id="util" min="10" max="100" value="60"
+               oninput="document.getElementById('utilLbl').textContent=this.value+'%';recalc();">
+        <div class="hint">Low = energy wasted idling. Interactive use → lower than batch pipelines.</div>
+      </div>
+
+      <div class="igroup">
+        <div class="irow">
+          <label>PUE — data centre overhead <span class="surveyed">from survey</span></label>
+          <span class="ival" id="pueLbl">1.40</span>
+        </div>
+        <input type="range" id="pue" min="1.0" max="2.5" step="0.05" value="1.4"
+               oninput="document.getElementById('pueLbl').textContent=parseFloat(this.value).toFixed(2);recalc();">
+        <div class="hint">1.2 = hyperscaler. 1.4 = typical cloud. 2.0+ = on-prem.</div>
+      </div>
+
+      <button class="tog" onclick="toggleAdv()">⚙ Show embodied carbon settings</button>
+      <div class="adv" id="advSec">
+        <div class="subdiv">Embodied carbon</div>
+        <div class="igroup">
+          <div class="irow"><label>GPU manufacturing CO₂ (kg)</label><span class="ival" id="gpuCo2Lbl">200 kg</span></div>
+          <input type="range" id="gpuCo2" min="50" max="500" step="10" value="200"
+                 oninput="document.getElementById('gpuCo2Lbl').textContent=this.value+' kg';recalc();">
+        </div>
+        <div class="igroup">
+          <div class="irow"><label>GPU lifetime (years)</label><span class="ival" id="gpuLifeLbl">4 yrs</span></div>
+          <input type="range" id="gpuLife" min="1" max="8" value="4"
+                 oninput="document.getElementById('gpuLifeLbl').textContent=this.value+' yrs';recalc();">
+        </div>
+        <div class="igroup">
+          <div class="irow"><label>Tokens per GPU / month (M)</label><span class="ival" id="gpuTokLbl">50M</span></div>
+          <input type="range" id="gpuTok" min="1" max="500" step="5" value="50"
+                 oninput="document.getElementById('gpuTokLbl').textContent=this.value+'M';recalc();">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div>
+    <div class="card">
+      <div class="clabel">Electricity grid <span class="surveyed">from survey</span></div>
+
+      <div class="igroup">
+        <div class="irow">
+          <label>Grid carbon intensity</label>
+          <span class="ival" id="gridLbl">136 g CO₂/kWh</span>
+        </div>
+        <input type="range" id="grid" min="15" max="800" step="5" value="136"
+               oninput="document.getElementById('gridLbl').textContent=this.value+' g CO₂/kWh';
+                        updateGridHighlight();recalc();">
+        <div class="hint" style="margin-bottom:8px">Drag or click a region below.</div>
+        <table class="loc-tbl" id="locTbl">
+          <tr data-g="136" class="active-loc"><td>🇧🇷 Brazil (hydro-heavy)</td><td>136 g/kWh</td></tr>
+          <tr data-g="120"><td>🇨🇦 Canada national avg</td><td>120 g/kWh</td></tr>
+          <tr data-g="15"><td>🇨🇦 Canada BC (hydro)</td><td>15 g/kWh</td></tr>
+          <tr data-g="400"><td>🇺🇸 US average</td><td>400 g/kWh</td></tr>
+          <tr data-g="60"><td>🇫🇷 France (nuclear)</td><td>60 g/kWh</td></tr>
+          <tr data-g="700"><td>🇵🇱 Poland (coal)</td><td>700 g/kWh</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="clabel">Results — this month</div>
+
+      <div class="rgrid">
+        <div class="rcell"><div class="rnum cg" id="r-co2">—</div><div class="runit">kg CO₂</div><div class="rlbl">total</div></div>
+        <div class="rcell"><div class="rnum ca" id="r-km">—</div><div class="runit">km driven</div><div class="rlbl">car equiv.</div></div>
+        <div class="rcell"><div class="rnum cb" id="r-trees">—</div><div class="runit">trees/yr</div><div class="rlbl">to offset</div></div>
+        <div class="rcell"><div class="rnum cr" id="r-cost">—</div><div class="runit">USD</div><div class="rlbl">@ $50/t CO₂</div></div>
+      </div>
+
+      <div class="pertok-row">
+        <span style="font-size:12px;color:var(--muted)">g CO₂ per token</span>
+        <span class="rnum cg" id="r-pertok" style="font-size:16px">—</span>
+      </div>
+
+      <div class="clabel" style="margin-top:12px">Calculation trace</div>
+      <div class="eqbox" id="eqbox">…</div>
+    </div>
+  </div>
+
+  <!-- SCENARIO COMPARISON -->
+  <div class="card full">
+    <div class="clabel">Scenario comparison — same token volume, different models</div>
+    <div class="cmp-grid" id="cmpGrid">…</div>
+    <div class="hint" style="margin-top:8px">Recalculated live using your current hardware and grid settings.</div>
+  </div>
+
+  <!-- CONFIDENCE + ASSUMPTIONS side by side -->
+  <div class="card">
+    <div class="clabel">Estimate confidence</div>
+    <div id="confBars"></div>
+  </div>
+
+  <div class="card">
+    <div class="clabel">Assumptions & sources</div>
+    <table class="atbl">
+      <thead><tr><th>Factor</th><th>Value</th><th>Contribution</th><th>Source</th><th>Unc.</th></tr></thead>
+      <tbody id="aBody"></tbody>
+    </table>
+  </div>
+
+</div><!-- /wrap -->
+</div><!-- /calcScreen -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// WIZARD DEFINITION
+// ═══════════════════════════════════════════════════════════
+const STEPS = [
+  {
+    id: 'location',
+    q: 'Where are you located — or where do you think your AI servers are hosted?',
+    hint: 'This determines the carbon intensity of the electricity powering your AI. If you\'re unsure about servers, use your own location as a starting point.',
+    why: 'Grid carbon intensity is the single most variable factor in the calculation — the same query on a coal-heavy grid emits up to 50× more CO₂ than on a hydro grid.',
+    type: 'choice',
+    cols: 2,
+    options: [
+      { main:'🇧🇷 Brazil', sub:'Hydro-heavy · ~136 g/kWh', val:'BR' },
+      { main:'🇨🇦 Canada (BC/Quebec)', sub:'Hydro-dominant · ~15–40 g/kWh', val:'CA_CLEAN' },
+      { main:'🇨🇦 Canada (other)', sub:'National avg · ~120 g/kWh', val:'CA_AVG' },
+      { main:'🇺🇸 United States', sub:'Avg coal+gas mix · ~400 g/kWh', val:'US' },
+      { main:'🇪🇺 Western Europe', sub:'Mixed / nuclear · ~200 g/kWh', val:'EU' },
+      { main:'🌍 Other / unsure', sub:'Use global avg · ~475 g/kWh', val:'OTHER' },
+    ]
+  },
+  {
+    id: 'tokens',
+    q: 'How many tokens did you personally use last month?',
+    hint: 'Check your personal usage in the Telus AI dashboard — look for your own account\'s token count, not the team total. If you can\'t find it, use the quick estimates below.',
+    why: 'This is the only directly measured input — everything else is estimated. Personal usage is what you have reliable access to, and it scales linearly with every output.',
+    type: 'tokens'
+  },
+  {
+    id: 'hardware',
+    q: 'How does your team access AI — cloud service or on your own servers?',
+    hint: 'This affects the data centre overhead (PUE) and the likely GPU generation used.',
+    why: 'Cloud providers like AWS/GCP run hyperscaler data centres (PUE ≈ 1.2). On-premise servers are typically less efficient (PUE ≈ 1.5–2.0).',
+    type: 'choice',
+    cols: 1,
+    options: [
+      { main:'Cloud API / browser tool', sub:'e.g. Claude.ai, FuelIX via web, Anthropic API — hosted by provider', val:'cloud' },
+      { main:'Company-managed cloud', sub:'e.g. AWS/Azure instance managed by Telus infra team', val:'corp_cloud' },
+      { main:'On-premise servers', sub:'Runs on Telus-owned hardware in Telus data centres', val:'onprem' },
+      { main:'Not sure', sub:'Use conservative cloud defaults', val:'unknown' },
+    ]
+  },
+  {
+    id: 'output_ratio',
+    q: '"My queries are usually much shorter than the answers I get."',
+    hint: 'Think about a typical interaction: a short question that produces a long detailed response, vs. pasting a document to be summarised.',
+    why: 'Output tokens cost ~5× more energy than input tokens. Getting this ratio right can shift your estimate by 2–3×.',
+    type: 'likert',
+    opts: ['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'],
+    vals: [15, 30, 50, 72, 85]
+  },
+  {
+    id: 'task_type',
+    q: '"I mostly use AI for complex reasoning — analysis, writing, detailed explanations — rather than quick lookups."',
+    hint: 'Quick lookups and classifications use smaller, faster models. Deep reasoning and generation use larger, more expensive ones.',
+    why: 'Task complexity maps to model tier. A 70B model uses roughly 7× more energy per token than a 7B model for the same query.',
+    type: 'likert',
+    opts: ['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'],
+    vals: [0,1,2,3,4]
+  },
+  {
+    id: 'interactive',
+    q: '"I use AI in live conversations rather than automated batch pipelines."',
+    hint: 'Batch pipelines (e.g. nightly report generation) run at high GPU utilisation. Interactive use sits between queries, leaving GPUs partially idle.',
+    why: 'GPU utilisation determines how much idle power is wasted per useful token. Lower utilisation = higher energy per token.',
+    type: 'likert',
+    opts: ['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'],
+    vals: [0,1,2,3,4]
+  },
+  {
+    id: 'frequency',
+    q: '"I use AI tools multiple times a day, most working days."',
+    hint: 'This helps us estimate whether your 2.8M token figure reflects heavy or light personal usage, and scale annualised impact.',
+    why: 'Frequency calibrates the annualised projection in the comparison panel.',
+    type: 'likert',
+    opts: ['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'],
+    vals: [0,1,2,3,4]
+  },
+  {
+    id: 'server_location',
+    q: '"I\'m not sure where the servers running my AI tools are physically located."',
+    hint: 'If you know your servers are in a specific region (e.g. Telus uses Canadian data centres), that overrides your personal location for grid intensity.',
+    why: 'Physical server location, not user location, determines which grid the energy comes from. This flags whether we should use your location or a default.',
+    type: 'likert',
+    opts: ['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'],
+    vals: [0,1,2,3,4]
+  },
+];
+
+// ═══════════════════════════════════════════════════════════
+// WIZARD STATE
+// ═══════════════════════════════════════════════════════════
+let currentStep = 0;
+const answers = {};
+
+function renderStep(idx) {
+  const s = STEPS[idx];
+  const total = STEPS.length;
+  const pct = Math.round((idx / total) * 100);
+
+  document.getElementById('stepLabel').textContent = `Question ${idx+1} of ${total}`;
+  document.getElementById('stepPct').textContent = pct + '%';
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('btnBack').style.visibility = idx === 0 ? 'hidden' : 'visible';
+  document.getElementById('btnNext').textContent = idx === total-1 ? 'See results →' : 'Next →';
+
+  let html = `<div class="step-card">
+    <div class="step-q">${s.q}</div>
+    <div class="step-hint">${s.hint}</div>`;
+
+  if (s.type === 'likert') {
+    html += `<div class="likert">`;
+    s.opts.forEach((o, i) => {
+      const sel = answers[s.id] === i ? 'selected' : '';
+      html += `<label class="likert-opt">
+        <div class="likert-btn ${sel}" onclick="selectLikert('${s.id}', ${i}, this)">${i+1}</div>
+        <div class="likert-lbl">${o}</div>
+      </label>`;
+    });
+    html += `</div>`;
+  }
+
+  else if (s.type === 'choice') {
+    html += `<div class="choice-grid ${s.cols===2?'cols2':'cols1'}">`;
+    s.options.forEach((o, i) => {
+      const sel = answers[s.id] === i ? 'selected' : '';
+      html += `<div class="choice-opt ${sel}" onclick="selectChoice('${s.id}', ${i}, this)">
+        <div class="choice-main">${o.main}</div>
+        <div class="choice-sub">${o.sub}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  else if (s.type === 'tokens') {
+    const saved = answers[s.id] || '';
+    html += `<div class="tok-wrap">
+      <div class="tok-input-row">
+        <input type="number" id="tokInput" value="${saved}" min="0" step="100000"
+               placeholder="e.g. 2800000"
+               oninput="answers.tokens=+this.value;validateStep();">
+        <span class="tok-unit">tokens / month</span>
+      </div>
+      <div class="tok-presets">
+        <span style="font-size:11px;color:var(--dim);align-self:center">Quick estimate:</span>
+        ${[['~100K','few queries/day',100000],['~500K','regular team use',500000],
+           ['~2.8M','Telus dashboard default',2800000],['~10M','heavy/team use',10000000]]
+          .map(([l,s,v])=>`<span class="tok-preset ${saved==v?'sel':''}"
+            onclick="setTokenPreset(${v},this)">${l}<br><span style="font-size:9px;color:var(--dim)">${s}</span></span>`).join('')}
+      </div>
+      <div class="tok-fallback">Don't have dashboard access? Pick a quick estimate above.</div>
+    </div>`;
+  }
+
+  html += `<div class="step-why">💡 Why we ask: ${s.why}</div></div>`;
+  document.getElementById('stepContainer').innerHTML = html;
+
+  // restore validation state
+  validateStep();
+}
+
+function selectLikert(id, val, el) {
+  answers[id] = val;
+  document.querySelectorAll('.likert-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  validateStep();
+}
+
+function selectChoice(id, val, el) {
+  answers[id] = val;
+  document.querySelectorAll('.choice-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  validateStep();
+}
+
+function setTokenPreset(val, el) {
+  answers.tokens = val;
+  document.getElementById('tokInput').value = val;
+  document.querySelectorAll('.tok-preset').forEach(p => p.classList.remove('sel'));
+  el.classList.add('sel');
+  validateStep();
+}
+
+function validateStep() {
+  const s = STEPS[currentStep];
+  let ok = false;
+  if (s.type === 'likert' || s.type === 'choice') ok = answers[s.id] !== undefined;
+  if (s.type === 'tokens') ok = answers.tokens > 0;
+  document.getElementById('btnNext').disabled = !ok;
+}
+
+function wizNext() {
+  if (currentStep < STEPS.length - 1) {
+    currentStep++;
+    renderStep(currentStep);
+  } else {
+    showInference();
+  }
+}
+
+function wizBack() {
+  if (currentStep > 0) {
+    currentStep--;
+    renderStep(currentStep);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// INFERENCE ENGINE
+// ═══════════════════════════════════════════════════════════
+
+// Grid intensity by location answer index
+const GRID_MAP = { BR:136, CA_CLEAN:22, CA_AVG:120, US:400, EU:200, OTHER:475 };
+const LOC_VALS  = ['BR','CA_CLEAN','CA_AVG','US','EU','OTHER'];
+
+// Output pct from Q4 likert (index 0–4)
+const OUT_PCT_MAP = [15, 30, 50, 72, 85];
+
+// Model tier from Q5 (task_type) × Q6 (interactive) heuristic
+function inferModel(taskIdx, interactiveIdx) {
+  // task=0 simple, task=4 complex
+  // interactive: high = lower model tier needed
+  const score = taskIdx - (interactiveIdx > 2 ? 1 : 0);
+  if (score <= 1) return 'haiku';
+  if (score <= 3) return 'sonnet';
+  return 'opus';
+}
+
+// GPU from hardware answer
+function inferGPU(hwIdx) {
+  const map = { cloud:'h100', corp_cloud:'a100', onprem:'a100pcie', unknown:'a100' };
+  const key = ['cloud','corp_cloud','onprem','unknown'][hwIdx] || 'unknown';
+  return map[key];
+}
+
+// PUE from hardware
+function inferPUE(hwIdx) { return [1.2, 1.35, 1.8, 1.4][hwIdx] ?? 1.4; }
+
+// Utilisation from interactive (Q6) and frequency (Q7)
+function inferUtil(interIdx, freqIdx) {
+  // More interactive = lower util (queries separated by idle time)
+  // More frequent = slightly higher util
+  const base = [75, 70, 65, 55, 45][interIdx] ?? 60;
+  const freqAdj = (freqIdx - 2) * 3; // -6 to +6
+  return Math.min(90, Math.max(20, base + freqAdj));
+}
+
+// Grid intensity: if server_location uncertain (Q8 agree/strongly agree), use location answer
+// otherwise warn user to check
+function inferGrid(locIdx, serverUncertainIdx) {
+  const locKey = LOC_VALS[locIdx] || 'OTHER';
+  return GRID_MAP[locKey];
+}
+
+function buildInference() {
+  const locIdx       = answers.location   ?? 0;
+  const hwIdx        = answers.hardware   ?? 3;
+  const outPctIdx    = answers.output_ratio ?? 4;   // default: strongly agree (Queen Bi!)
+  const taskIdx      = answers.task_type  ?? 3;
+  const interIdx     = answers.interactive ?? 3;
+  const freqIdx      = answers.frequency  ?? 3;
+  const serverUncIdx = answers.server_location ?? 3;
+
+  return {
+    tokens:   answers.tokens || 2_800_000,
+    grid:     inferGrid(locIdx, serverUncIdx),
+    outPct:   OUT_PCT_MAP[outPctIdx],
+    model:    inferModel(taskIdx, interIdx),
+    gpu:      inferGPU(hwIdx),
+    pue:      inferPUE(hwIdx),
+    util:     inferUtil(interIdx, freqIdx),
+    // reasons
+    reasons: {
+      grid:   `From your location (${['Brazil','Canada BC/QC','Canada avg','United States','Western Europe','Other'][locIdx]}). ${serverUncIdx >= 3 ? 'Server location unknown — using your region.' : 'You indicated you know server location — verify below.'}`,
+      outPct: `You ${['strongly disagree','disagree','are neutral','agree','strongly agree'][outPctIdx]} that your queries are shorter than answers. → ${OUT_PCT_MAP[outPctIdx]}% output.`,
+      model:  `Task complexity (${['very simple','simple','moderate','complex','very complex'][taskIdx]}) + interactive use → ${inferModel(taskIdx,interIdx)} tier.`,
+      gpu:    `Inferred from "${['cloud API/browser','company-managed cloud','on-premise servers','unknown'][hwIdx]}" infrastructure.`,
+      pue:    `Data centre type → PUE ${inferPUE(hwIdx).toFixed(2)}. ${[' (hyperscaler efficiency)',' (managed cloud)',' (on-prem, less efficient)',' (conservative default)'][hwIdx]||''}`,
+      util:   `${['Batch/non-interactive','Mostly automated','Mixed','Mostly interactive','Fully interactive'][interIdx]} use + ${['rare','occasional','regular','frequent','very frequent'][freqIdx]} frequency → ${inferUtil(interIdx,freqIdx)}% utilisation.`,
+    }
+  };
+}
+
+let inferred = {};
+
+function showInference() {
+  inferred = buildInference();
+  document.getElementById('wizard').style.display = 'none';
+
+  const screen = document.getElementById('inferScreen');
+  screen.style.display = 'flex';
+
+  const cards = [
+    { param:'Grid intensity', val: inferred.grid + ' g CO₂/kWh', reason: inferred.reasons.grid, sliderId:'infGrid', min:15, max:800, step:5, current:inferred.grid, unit:'g/kWh' },
+    { param:'Output token %', val: inferred.outPct + '%', reason: inferred.reasons.outPct, sliderId:'infOut', min:5, max:95, step:1, current:inferred.outPct, unit:'%' },
+    { param:'Model tier', val: inferred.model, reason: inferred.reasons.model, sliderId:null },
+    { param:'GPU type', val: inferred.gpu.toUpperCase(), reason: inferred.reasons.gpu, sliderId:null },
+    { param:'PUE', val: inferred.pue.toFixed(2), reason: `<b>Power Usage Effectiveness</b> — ratio of total data centre energy to the energy actually used by computing hardware. A PUE of ${inferred.pue.toFixed(2)} means that for every 1 kWh the GPU consumes, ${inferred.pue.toFixed(2)} kWh are drawn from the grid — the extra ${(inferred.pue - 1).toFixed(2)} kWh goes to cooling, networking, and lighting. ${inferred.reasons.pue}`, sliderId:'infPue', min:1.0, max:2.5, step:0.05, current:inferred.pue, unit:'' },
+    { param:'Utilisation', val: inferred.util + '%', reason: inferred.reasons.util, sliderId:'infUtil', min:10, max:100, step:5, current:inferred.util, unit:'%' },
+  ];
+
+  document.getElementById('inferGrid').innerHTML = cards.map(c => `
+    <div class="infer-card">
+      <div class="infer-param">${c.param}</div>
+      <div class="infer-val" id="iv_${c.sliderId||c.param.replace(/\s/g,'')}">${c.val}</div>
+      <div class="infer-reason">${c.reason}</div>
+      ${c.sliderId ? `
+      <div class="infer-slider-row">
+        <input type="range" id="${c.sliderId}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.current}"
+               oninput="document.getElementById('iv_${c.sliderId}').textContent=
+                 (this.id==='infPue'?parseFloat(this.value).toFixed(2):this.value)+'${c.unit}';
+                 inferred.${c.sliderId==='infGrid'?'grid':c.sliderId==='infOut'?'outPct':c.sliderId==='infPue'?'pue':'util'}=+this.value;">
+        <span class="infer-slider-lbl" style="font-size:10px;color:var(--amber)">override</span>
+      </div>` : ''}
+    </div>
+  `).join('');
+}
+
+function showCalc() {
+  // push inferred values into calculator controls
+  document.getElementById('inferScreen').style.display = 'none';
+  document.getElementById('calcScreen').style.display = 'block';
+
+  document.getElementById('tokens').value   = inferred.tokens;
+  document.getElementById('outPct').value   = inferred.outPct;
+  document.getElementById('outPctLbl').textContent = inferred.outPct + '%';
+  document.getElementById('splitIn').style.width = (100 - inferred.outPct) + '%';
+  document.getElementById('grid').value     = inferred.grid;
+  document.getElementById('gridLbl').textContent = inferred.grid + ' g CO₂/kWh';
+  document.getElementById('pue').value      = inferred.pue;
+  document.getElementById('pueLbl').textContent  = inferred.pue.toFixed(2);
+  document.getElementById('util').value     = inferred.util;
+  document.getElementById('utilLbl').textContent = inferred.util + '%';
+
+  // model
+  const tool = inferred.gpu === 'a100pcie' ? 'fuelix' : 'claude';
+  // keep claude as default, set model
+  if (['haiku','sonnet','opus','mix'].includes(inferred.model)) {
+    document.getElementById('claudeModel').value = inferred.model;
+  }
+
+  // gpu
+  document.getElementById('gpu').value = inferred.gpu;
+
+  updateGridHighlight();
+  recalc();
+}
+
+function retakeSurvey() {
+  currentStep = 0;
+  document.getElementById('calcScreen').style.display    = 'none';
+  document.getElementById('inferScreen').style.display   = 'none';
+  document.getElementById('wizard').style.display        = 'flex';
+  renderStep(0);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CALCULATOR ENGINE
+// ═══════════════════════════════════════════════════════════
+const GPU_SPECS = {
+  h100:     { label:'H100 SXM5', tdp:700, tps:275, eco:225 },
+  a100:     { label:'A100 SXM4', tdp:400, tps:130, eco:150 },
+  a100pcie: { label:'A100 PCIe', tdp:300, tps:110, eco:130 },
+  unknown:  { label:'Unknown (A100 proxy)', tdp:400, tps:130, eco:150 },
+};
+
+const MODEL_SPECS = {
+  haiku:         { label:'Claude Haiku',           input:0.000090, output:0.000450 },
+  sonnet:        { label:'Claude Sonnet',           input:0.000390, output:0.001950 },
+  opus:          { label:'Claude Opus',             input:0.000780, output:0.003900 },
+  mix:           { label:'Claude Mix (60S/30H/10O)',input:0.000316, output:0.001580 },
+  fuelix_small:  { label:'FuelIX (small ~7B)',      input:0.000080, output:0.000400 },
+  fuelix_medium: { label:'FuelIX (medium ~20B)',    input:0.000250, output:0.001250 },
+  fuelix_large:  { label:'FuelIX (large ~70B+)',    input:0.000600, output:0.003000 },
+};
+
+const KM_PER_KG  = 6.0;
+const TREE_KG_YR = 22;
+const CARB_PRICE = 50;
+
+function getCalcInputs() {
+  const tool    = document.getElementById('tool').value;
+  const modelId = tool === 'claude'
+    ? document.getElementById('claudeModel').value
+    : document.getElementById('fuelixModel').value;
+  return {
+    tool, modelId,
+    tokens:  +document.getElementById('tokens').value || 2_800_000,
+    outPct:  +document.getElementById('outPct').value / 100,
+    gpuId:   document.getElementById('gpu').value,
+    util:    +document.getElementById('util').value / 100,
+    pue:     +document.getElementById('pue').value,
+    grid:    +document.getElementById('grid').value,
+    gpuCo2:  +document.getElementById('gpuCo2').value,
+    gpuLife: +document.getElementById('gpuLife').value,
+    gpuTok:  +document.getElementById('gpuTok').value * 1_000_000,
+  };
+}
+
+function computeCarbon(p, modelId, tokenCount) {
+  const m   = MODEL_SPECS[modelId];
+  const gpu = GPU_SPECS[p.gpuId];
+  const inTok  = tokenCount * (1 - p.outPct);
+  const outTok = tokenCount * p.outPct;
+  const eRaw   = (inTok/1000 * m.input) + (outTok/1000 * m.output);
+  const eUtil  = eRaw / p.util;
+  const eTotal = eUtil * p.pue;
+  const opKg   = (eTotal * p.grid) / 1000;
+  const lifetimeTok  = p.gpuTok * p.gpuLife * 12;
+  const embodiedKg   = lifetimeTok > 0 ? (p.gpuCo2 / lifetimeTok) * tokenCount : 0;
+  const totalKg  = opKg + embodiedKg;
+  const perTok_g = (totalKg * 1000) / tokenCount;
+  return { totalKg, opKg, embodiedKg, eRaw, eUtil, eTotal, perTok_g, inTok, outTok, m, gpu };
+}
+
+function fmt(n, d=2) {
+  if (Math.abs(n) >= 10000) return n.toLocaleString('en',{maximumFractionDigits:0});
+  if (Math.abs(n) >= 100)   return n.toFixed(1);
+  return n.toFixed(d);
+}
+
+function recalc() {
+  const p = getCalcInputs();
+  const r = computeCarbon(p, p.modelId, p.tokens);
+
+  document.getElementById('r-co2').textContent   = fmt(r.totalKg, 3);
+  document.getElementById('r-km').textContent    = fmt(r.totalKg * KM_PER_KG, 0);
+  document.getElementById('r-trees').textContent = fmt(r.totalKg / TREE_KG_YR, 2);
+  document.getElementById('r-cost').textContent  = '$' + fmt((r.totalKg/1000)*CARB_PRICE, 2);
+  document.getElementById('r-pertok').textContent = r.perTok_g.toExponential(3) + ' g';
+
+  document.getElementById('eqbox').innerHTML = `
+<span class="elbl">Model: ${r.m.label} · GPU: ${r.gpu.label} (${r.gpu.tdp}W TDP)</span>
+
+<span class="elbl">① Raw energy</span>
+  (${fmt(r.inTok/1e3,0)}k input × ${r.m.input} kWh/kTok) <span class="eop">+</span> (${fmt(r.outTok/1e3,0)}k output × ${r.m.output} kWh/kTok)
+  <span class="eop">=</span> <span class="ev">${r.eRaw.toExponential(4)} kWh</span>
+
+<span class="elbl">② Utilisation  (÷ ${fmt(p.util*100,0)}%)</span>
+  <span class="eop">=</span> <span class="ev">${r.eUtil.toExponential(4)} kWh</span>
+
+<span class="elbl">③ PUE overhead  (× ${p.pue})</span>
+  <span class="eop">=</span> <span class="ev">${r.eTotal.toExponential(4)} kWh</span>
+
+<span class="elbl">④ Operational carbon  (× ${p.grid} g/kWh)</span>
+  <span class="eop">=</span> <span class="ev">${fmt(r.opKg,5)} kg CO₂</span>
+
+<span class="elbl">⑤ Embodied carbon  (GPU lifecycle amortisation)</span>
+  <span class="eop">=</span> <span class="ev">${fmt(r.embodiedKg,5)} kg CO₂</span>
+
+<span class="elbl">⑥ Total</span>
+  <span class="eop">=</span> <span class="ev"><b>${fmt(r.totalKg,4)} kg CO₂  ·  ${r.perTok_g.toExponential(3)} g/token</b></span>`;
+
+  // Scenario comparison
+  const tool = p.tool;
+  const scenarios = tool === 'claude'
+    ? [{id:'haiku',col:'cb',lbl:'Claude Haiku'},{id:p.modelId,col:'cg',lbl:r.m.label+' ★'},{id:'opus',col:'ca',lbl:'Claude Opus'}]
+    : [{id:'fuelix_small',col:'cb',lbl:'FuelIX Small'},{id:p.modelId,col:'cg',lbl:r.m.label+' ★'},{id:'fuelix_large',col:'ca',lbl:'FuelIX Large'}];
+
+  document.getElementById('cmpGrid').innerHTML = scenarios.map(s => {
+    const rc = computeCarbon(p, s.id, p.tokens);
+    return `<div class="cmp-cell">
+      <div class="cmp-name">${s.lbl}</div>
+      <div class="cmp-val ${s.col}">${fmt(rc.totalKg,3)} kg</div>
+      <div class="cmp-sub">${rc.perTok_g.toExponential(2)} g/tok · ${fmt(rc.totalKg/TREE_KG_YR,1)} trees/yr</div>
+    </div>`;
+  }).join('');
+
+  // Confidence bars
+  const factors = [
+    { lbl:'Token count',          conf:95, note:'Direct measurement from dashboard.' },
+    { lbl:'Output token fraction',conf:70, note:'Survey-calibrated. Higher confidence than a generic default.' },
+    { lbl:'Model energy/token',   conf:45, note:'Literature estimates — Anthropic does not publish per-token energy.' },
+    { lbl:'Grid carbon intensity',conf:72, note:'National/regional average. Real-time API would improve this.' },
+    { lbl:'PUE',                  conf:55, note:'Inferred from infrastructure type. Not disclosed by providers.' },
+    { lbl:'Utilisation',          conf:52, note:'Survey-calibrated from usage pattern. Unverified.' },
+    { lbl:'Embodied hardware CO₂',conf:28, note:'Very sparse lifecycle data for AI GPUs.' },
+  ];
+  document.getElementById('confBars').innerHTML = factors.map(f => {
+    const col = f.conf > 70 ? 'var(--green)' : f.conf > 50 ? 'var(--amber)' : 'var(--red)';
+    return `<div class="cbar-wrap">
+      <div class="cbar-top"><span>${f.lbl}</span>
+        <span style="font-family:var(--mono);color:${col}">${f.conf}%</span></div>
+      <div class="cbar"><div class="cbar-fill" style="width:${f.conf}%;background:${col}"></div></div>
+      <div class="hint">${f.note}</div>
+    </div>`;
+  }).join('');
+
+  // Assumptions table
+  const rows = [
+    ['Monthly tokens', fmt(p.tokens/1e6,2)+'M', 'Every output scales linearly with this number.', 'Telus AI usage dashboard', null, 'l'],
+    ['Output token %', fmt(p.outPct*100,0)+'%', 'Shifts energy significantly — output costs ~5× more per token than input.', 'Survey Q4 + Patterson et al. 2021', 'https://arxiv.org/abs/2104.10350', 'm'],
+    ['Input energy', r.m.input+' kWh/kTok', 'Sets raw energy cost for prompt processing (parallel prefill stage).', 'Couch 2026 (Claude); TokenPowerBench arxiv:2512.03024', 'https://simonpcouch.com/blog/2026-01-20-cc-impact/', 'm'],
+    ['Output energy', r.m.output+' kWh/kTok', 'Sets raw energy cost for token generation (sequential — hence costlier).', 'Luccioni et al. 2023 — BLOOM carbon footprint', 'https://arxiv.org/abs/2211.02001', 'm'],
+    ['GPU type', r.gpu.label, 'Determines TDP and throughput — two key inputs to energy per token.', 'Spheron AI Inference Guide 2026; OpenMetal H100 vs A100', 'https://www.spheron.network/blog/ai-inference-power-electricity-cost-2026/', 'm'],
+    ['Utilisation', fmt(p.util*100,0)+'%', 'Idle power waste: energy/useful-token scales as 1 ÷ utilisation.', 'Epoch AI — How much energy does ChatGPT use?', 'https://epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use', 'h'],
+    ['PUE', p.pue, 'Multiplies IT energy by data centre overhead (cooling, networking). PUE 1.4 = 40% extra.', 'Uptime Institute Global Data Center Survey 2023', 'https://uptimeinstitute.com/resources/research-and-reports/uptime-institute-global-data-center-survey-results-2023', 'h'],
+    ['Grid intensity', p.grid+' g/kWh', 'Converts kWh → kg CO₂. Most variable factor — coal vs hydro = up to 50× difference.', 'ONS Brazil 2024; Electricity Maps', 'https://www.electricitymaps.com/', 'm'],
+    ['Embodied CO₂/GPU', p.gpuCo2+' kg', 'Manufacturing carbon amortised over GPU lifetime. Small vs operational but non-zero.', 'Dell/Nvidia LCA product carbon footprint estimates', 'https://www.dell.com/en-us/dt/corporate/social-impact/advancing-sustainability/climate-action/product-carbon-footprints.htm', 'h'],
+    ['Car equivalent', '170 g/km', 'Makes CO₂ tangible — familiar reference for stakeholders.', 'European Environment Agency — avg car emissions 2023', 'https://www.eea.europa.eu/en/analysis/indicators/average-co2-emissions-from-new', 'l'],
+    ['Tree absorption', '22 kg/yr', 'Converts total CO₂ to "trees to offset" — accessible for non-technical audiences.', 'IPCC AR6 WG3 — forest carbon sequestration', 'https://www.ipcc.ch/report/ar6/wg3/', 'l'],
+    ['Carbon price', '$50/t', 'Gives CO₂ a monetary value — useful for budget and procurement conversations.', 'World Bank Carbon Pricing Dashboard 2024', 'https://carbonpricingdashboard.worldbank.org/', 'm'],
+  ];
+  const bmap={l:'bl',m:'bm',h:'bh'}, blab={l:'LOW',m:'MED',h:'HIGH'};
+  document.getElementById('aBody').innerHTML = rows.map(([n,v,contrib,src,url,u]) =>
+    `<tr><td>${n}</td><td>${v}</td>
+     <td class="contrib">${contrib}</td>
+     <td style="font-size:11px;color:var(--dim)">${src}${url?`<br><a href="${url}" target="_blank" rel="noopener">↗ ${url.replace('https://','').split('/')[0]}</a>`:''}</td>
+     <td><span class="badge ${bmap[u]}">${blab[u]}</span></td></tr>`
+  ).join('');
+}
+
+function updateGridHighlight() {
+  const v = +document.getElementById('grid').value;
+  document.querySelectorAll('#locTbl tr').forEach(tr => {
+    tr.classList.toggle('active-loc', Math.abs(+tr.dataset.g - v) < 15);
+  });
+}
+
+function onToolChange() {
+  const t = document.getElementById('tool').value;
+  document.getElementById('claudeModelWrap').style.display  = t==='claude'?'':'none';
+  document.getElementById('fuelixModelWrap').style.display  = t==='fuelix'?'':'none';
+  recalc();
+}
+
+function toggleAdv() {
+  const s = document.getElementById('advSec');
+  s.classList.toggle('open');
+  document.querySelector('.tog').textContent = s.classList.contains('open')
+    ? '⚙ Hide embodied carbon settings' : '⚙ Show embodied carbon settings';
+}
+
+document.querySelectorAll('#locTbl tr').forEach(tr => {
+  tr.addEventListener('click', () => {
+    document.getElementById('grid').value = tr.dataset.g;
+    document.getElementById('gridLbl').textContent = tr.dataset.g + ' g CO₂/kWh';
+    updateGridHighlight();
+    recalc();
+  });
+});
+
+// ── boot ──
+renderStep(0);
+</script>
+</body>
+</html>
