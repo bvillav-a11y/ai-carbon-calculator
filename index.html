@@ -372,7 +372,7 @@ input[type=number]{font-family:var(--mono);}
         <label>AI tool</label>
         <select id="tool" onchange="onToolChange()">
           <option value="claude">Claude (Anthropic)</option>
-          <option value="fuelix">FuelIX (Telus internal)</option>
+          <option value="other">Other LLM / internal tool</option>
         </select>
       </div>
 
@@ -387,12 +387,13 @@ input[type=number]{font-family:var(--mono);}
       </div>
 
       <div class="igroup" id="fuelixModelWrap" style="display:none">
-        <label>FuelIX model tier</label>
+        <label>Model size estimate</label>
         <select id="fuelixModel" onchange="recalc()">
           <option value="fuelix_small">Small / fine-tuned (~7B)</option>
           <option value="fuelix_medium" selected>Medium (~13–35B)</option>
           <option value="fuelix_large">Large (~70B+)</option>
         </select>
+        <div class="hint">Pick the closest match to the model your tool uses. If unsure, Medium is a safe default.</div>
       </div>
 
       <div class="igroup" style="margin-top:8px">
@@ -581,9 +582,9 @@ const STEPS = [
     type: 'choice',
     cols: 1,
     options: [
-      { main:'Cloud API / browser tool', sub:'e.g. Claude.ai, FuelIX via web, Anthropic API — hosted by provider', val:'cloud' },
-      { main:'Company-managed cloud', sub:'e.g. AWS/Azure instance managed by Telus infra team', val:'corp_cloud' },
-      { main:'On-premise servers', sub:'Runs on Telus-owned hardware in Telus data centres', val:'onprem' },
+      { main:'Cloud API / browser tool', sub:'e.g. Claude.ai, ChatGPT, Gemini — hosted by provider', val:'cloud' },
+      { main:'Company-managed cloud', sub:'e.g. AWS/Azure instance managed by your org\'s infra team', val:'corp_cloud' },
+      { main:'On-premise servers', sub:'Runs on hardware owned and operated by your organisation', val:'onprem' },
       { main:'Not sure', sub:'Use conservative cloud defaults', val:'unknown' },
     ]
   },
@@ -626,7 +627,7 @@ const STEPS = [
   {
     id: 'server_location',
     q: '"I\'m not sure where the servers running my AI tools are physically located."',
-    hint: 'If you know your servers are in a specific region (e.g. Telus uses Canadian data centres), that overrides your personal location for grid intensity.',
+    hint: 'If you know your servers are in a specific region (e.g. your company uses data centres in a particular country), that overrides your personal location for grid intensity.',
     why: 'Physical server location, not user location, determines which grid the energy comes from. This flags whether we should use your location or a default.',
     type: 'likert',
     opts: ['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'],
@@ -880,7 +881,7 @@ function showCalc() {
   document.getElementById('utilLbl').textContent = inferred.util + '%';
 
   // model
-  const tool = inferred.gpu === 'a100pcie' ? 'fuelix' : 'claude';
+  const tool = inferred.gpu === 'a100pcie' ? 'other' : 'claude';
   // keep claude as default, set model
   if (['haiku','sonnet','opus','mix'].includes(inferred.model)) {
     document.getElementById('claudeModel').value = inferred.model;
@@ -916,9 +917,9 @@ const MODEL_SPECS = {
   sonnet:        { label:'Claude Sonnet',           input:0.000390, output:0.001950 },
   opus:          { label:'Claude Opus',             input:0.000780, output:0.003900 },
   mix:           { label:'Claude Mix (60S/30H/10O)',input:0.000316, output:0.001580 },
-  fuelix_small:  { label:'FuelIX (small ~7B)',      input:0.000080, output:0.000400 },
-  fuelix_medium: { label:'FuelIX (medium ~20B)',    input:0.000250, output:0.001250 },
-  fuelix_large:  { label:'FuelIX (large ~70B+)',    input:0.000600, output:0.003000 },
+  fuelix_small:  { label:'Other LLM (small ~7B)',       input:0.000080, output:0.000400 },
+  fuelix_medium: { label:'Other LLM (medium ~20B)',     input:0.000250, output:0.001250 },
+  fuelix_large:  { label:'Other LLM (large ~70B+)',     input:0.000600, output:0.003000 },
 };
 
 const KM_PER_KG  = 6.0;
@@ -1002,7 +1003,7 @@ function recalc() {
   const tool = p.tool;
   const scenarios = tool === 'claude'
     ? [{id:'haiku',col:'cb',lbl:'Claude Haiku'},{id:p.modelId,col:'cg',lbl:r.m.label+' ★'},{id:'opus',col:'ca',lbl:'Claude Opus'}]
-    : [{id:'fuelix_small',col:'cb',lbl:'FuelIX Small'},{id:p.modelId,col:'cg',lbl:r.m.label+' ★'},{id:'fuelix_large',col:'ca',lbl:'FuelIX Large'}];
+    : [{id:'fuelix_small',col:'cb',lbl:'Small (~7B)'},{id:p.modelId,col:'cg',lbl:r.m.label+' ★'},{id:'fuelix_large',col:'ca',lbl:'Large (~70B+)'}];
 
   document.getElementById('cmpGrid').innerHTML = scenarios.map(s => {
     const rc = computeCarbon(p, s.id, p.tokens);
@@ -1067,7 +1068,7 @@ function updateGridHighlight() {
 function onToolChange() {
   const t = document.getElementById('tool').value;
   document.getElementById('claudeModelWrap').style.display  = t==='claude'?'':'none';
-  document.getElementById('fuelixModelWrap').style.display  = t==='fuelix'?'':'none';
+  document.getElementById('fuelixModelWrap').style.display  = t==='other'?'':'none';
   recalc();
 }
 
