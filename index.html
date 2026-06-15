@@ -1289,6 +1289,8 @@ function runDefaults() {
   onToolChange();        // reveal the right model sub-dropdown (also recalcs)
   updateGridHighlight();
   recalc();
+  clearTips();              // average-user run has no survey reasons
+  collectBaseline(true);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1677,6 +1679,82 @@ if (applyHashState()) {
 }
 // Otherwise the intro screen is shown by default; the wizard is built
 // only when the user clicks "Start quiz" (see startQuiz()).
+
+// ═══════════════════════════════════════════════════════════
+// SURVEY DATA COLLECTION  (fire-and-forget → Google Apps Script)
+// Paste your deployed Web App URL below to enable. Empty = no-op.
+// ═══════════════════════════════════════════════════════════
+const COLLECT_URL = '';   // e.g. 'https://script.google.com/macros/s/AKfy.../exec'
+
+const _collect = { sessionId:null, payload:null, sent:false, explored:false, editCount:0 };
+
+function _newId(){
+  try { if (crypto && crypto.randomUUID) return crypto.randomUUID(); } catch(e) {}
+  return 'sid-' + Date.now() + '-' + Math.floor(Math.random()*1e9);
+}
+
+function sendCollect(payload){
+  if (!COLLECT_URL) return;
+  try {
+    const body = JSON.stringify(payload);
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(COLLECT_URL, new Blob([body], { type:'text/plain' }));
+    } else {
+      fetch(COLLECT_URL, { method:'POST', mode:'no-cors', headers:{ 'Content-Type':'text/plain' }, body });
+    }
+  } catch(e) { /* best-effort: never disturb the UI */ }
+}
+
+// Snapshot the honest "usage" baseline at first results render.
+function collectBaseline(quickRun){
+  if (_collect.sent || !COLLECT_URL || !hasConsent()) return;
+  const p = getCalcInputs();
+  const r = computeCarbon(p, p.modelId, p.tokens);
+  _collect.sessionId = _newId();
+  _collect.payload = {
+    sessionId:    _collect.sessionId,
+    quickRun:     !!quickRun,
+    ai_tool:      quickRun ? null : (answers.ai_tool ?? null),
+    hardware:     quickRun ? null : (answers.hardware ?? null),
+    output_ratio: quickRun ? null : (answers.output_ratio ?? null),
+    task_type:    quickRun ? null : (answers.task_type ?? null),
+    interactive:  quickRun ? null : (answers.interactive ?? null),
+    frequency:    quickRun ? null : (answers.frequency ?? null),
+    tokens:       p.tokens,
+    model:        p.modelId,
+    gpu:          p.gpuId,
+    util:         Math.round(p.util * 100),
+    pue:          p.pue,
+    grid:         p.grid,
+    carbonKg:     r.totalKg,
+    explored:     false,
+    editCount:    0,
+    clientTime:   new Date().toISOString(),
+  };
+  _collect.sent = true;
+  sendCollect(_collect.payload);
+
+  // Attach exploration listeners once. These fire only on real user input
+  // (programmatic value-setting above does not dispatch input/change events).
+  const calc = document.getElementById('calcScreen');
+  if (calc && !calc._exploreHooked) {
+    calc._exploreHooked = true;
+    calc.addEventListener('input',  markExplored);
+    calc.addEventListener('change', markExplored);
+  }
+}
+
+let _exploreTimer = null;
+function markExplored(){
+  if (!_collect.sent || !COLLECT_URL || !hasConsent()) return;
+  _collect.explored = true;
+  _collect.editCount++;
+  _collect.payload.explored = true;
+  _collect.payload.editCount = _collect.editCount;
+  clearTimeout(_exploreTimer);
+  _exploreTimer = setTimeout(() => sendCollect(_collect.payload), 2000);
+}
+window.addEventListener('pagehide', () => { if (_collect.explored) sendCollect(_collect.payload); });
 </script>
 </body>
 </html>
