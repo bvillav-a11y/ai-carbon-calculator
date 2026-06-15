@@ -23,9 +23,31 @@
   --text:      #e6edf3;
   --muted:     #b1bac4;        /* was #8b949e — lifted for AA on small text */
   --dim:       #8b949e;        /* was #484f58 — lifted to meet 4.5:1 on bg */
+  --divider:   #21262d;        /* low-contrast row separator (less "griddy") */
   --focus:     #79c0ff;        /* high-contrast focus ring */
   --mono:      'Space Mono', monospace;
   --sans:      'Space Grotesk', sans-serif;
+}
+
+/* ── Light theme — accents darkened for AA 4.5:1 on white ── */
+[data-theme="light"] {
+  --bg:        #ffffff;
+  --surface:   #f6f8fa;
+  --surface2:  #eef1f5;
+  --border:    #d0d7de;
+  --divider:   #eaecef;
+  --green:     #1a7f37;
+  --green-dim: #dafbe1;
+  --amber:     #9a6700;
+  --amber-dim: #fff8c5;
+  --red:       #cf222e;
+  --red-dim:   #ffebe9;
+  --blue:      #0969da;
+  --purple:    #8250df;
+  --text:      #1f2328;
+  --muted:     #59636e;
+  --dim:       #6e7781;
+  --focus:     #0969da;
 }
 
 /* ── Accessible focus rings: visible on every interactive control ── */
