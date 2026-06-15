@@ -80,11 +80,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
    INTRO / LANDING
 ══════════════════════════════════════════ */
 #intro {
+  position:relative;
   min-height:100vh;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   padding:32px 20px;
 }
+.theme-toggle{
+  position:absolute; top:16px; right:16px;
+  background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  border-radius:20px; padding:5px 12px; font-size:13px; font-family:inherit; cursor:pointer;
+}
+.theme-toggle:hover{ border-color:var(--muted); }
 .intro-title {
   font-size:26px;font-weight:700;line-height:1.25;margin-bottom:22px;
 }
@@ -462,6 +469,8 @@ input[type=number]{font-family:var(--mono);}
 <main id="intro" aria-labelledby="introTitle">
 <div class="wiz-shell">
   <div class="wiz-eye" aria-hidden="true">// AI Carbon Calculator</div>
+  <button id="themeToggle" class="theme-toggle" type="button"
+          aria-label="Switch between light and dark theme" onclick="toggleTheme()">☀️ Light</button>
   <h1 class="intro-title" id="introTitle">Estimate the carbon footprint of your AI usage.</h1>
 
   <ol class="intro-steps">
@@ -777,6 +786,23 @@ input[type=number]{font-family:var(--mono);}
 </div><!-- /calcScreen -->
 
 <script>
+// ── Theme: persisted in localStorage, defaults to OS preference ──
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = t === 'light' ? '🌙 Dark' : '☀️ Light';
+  try { localStorage.setItem('theme', t); } catch(e) {}
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(cur === 'light' ? 'dark' : 'light');
+}
+(function initTheme(){
+  let saved = null; try { saved = localStorage.getItem('theme'); } catch(e) {}
+  const sys = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  applyTheme(saved || sys);
+})();
+
 // ═══════════════════════════════════════════════════════════
 // WIZARD DEFINITION
 // ═══════════════════════════════════════════════════════════
