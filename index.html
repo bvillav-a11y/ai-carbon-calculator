@@ -55,6 +55,39 @@ html,body{height:100%;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding:0;}
 
 /* ══════════════════════════════════════════
+   INTRO / LANDING
+══════════════════════════════════════════ */
+#intro {
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:32px 20px;
+}
+.intro-title {
+  font-size:26px;font-weight:700;line-height:1.25;margin-bottom:22px;
+}
+.intro-steps {
+  list-style:none;display:flex;flex-direction:column;gap:14px;margin-bottom:22px;
+}
+.intro-steps li {
+  display:flex;align-items:flex-start;gap:12px;
+  font-size:14px;line-height:1.5;color:var(--text);
+}
+.intro-step-n {
+  flex:none;width:24px;height:24px;border-radius:50%;
+  background:var(--green-dim);color:var(--green);
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.intro-meta {
+  font-family:var(--mono);font-size:12px;color:var(--muted);
+  letter-spacing:.04em;margin-bottom:24px;
+}
+.intro-start {
+  align-self:flex-start;
+}
+
+/* ══════════════════════════════════════════
    WIZARD
 ══════════════════════════════════════════ */
 #wizard {
@@ -294,6 +327,12 @@ input[type=number]{font-family:var(--mono);}
 .pertok-row{background:var(--surface2);border:1px solid var(--border);border-radius:7px;
   padding:11px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
 
+.disclosure{display:flex;gap:9px;align-items:flex-start;
+  background:var(--amber-dim);border:1px solid var(--amber);border-radius:6px;
+  padding:10px 12px;margin-bottom:12px;font-size:12px;line-height:1.55;color:var(--text);}
+.disclosure .disclosure-icon{flex:none;}
+.disclosure b{color:var(--amber);}
+
 .btn-share{background:var(--surface2);border:1px solid var(--green);color:var(--green);
   padding:9px 16px;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:600;
   cursor:pointer;transition:all .2s;}
@@ -303,10 +342,20 @@ input[type=number]{font-family:var(--mono);}
 .share-toast.show{opacity:1;}
 
 .eqbox{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
-  padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:2.1;color:var(--text);}
-.eqbox .ev{color:var(--green);}
-.eqbox .elbl{color:var(--blue);font-size:12px;}
-.eqbox .eop{color:var(--muted);}
+  padding:14px 16px;font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--text);}
+.eqledger{display:flex;flex-direction:column;}
+.eq-head{color:var(--blue);margin-bottom:4px;}
+.eq-sec{color:var(--muted);text-transform:uppercase;letter-spacing:.1em;
+  font-size:11px;margin:10px 0 4px;}
+.eq-row{display:flex;justify-content:space-between;align-items:baseline;
+  gap:12px;padding:3px 0;}
+.eq-row > span:first-child{color:var(--muted);}
+.eq-val{color:var(--green);white-space:nowrap;font-weight:500;}
+.eq-tag{color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.06em;}
+.eq-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  border-top:1px solid var(--border);margin-top:8px;padding-top:8px;font-weight:700;}
+.eq-total .eq-val{color:var(--green);font-size:13px;}
+.eq-pertok{display:flex;justify-content:flex-end;color:var(--muted);font-size:11px;margin-top:3px;}
 
 .cbar-wrap{margin-bottom:8px;}
 .cbar-top{display:flex;justify-content:space-between;font-size:13px;color:var(--text);margin-bottom:3px;}
@@ -353,18 +402,52 @@ input[type=number]{font-family:var(--mono);}
 .loc-tbl tr{cursor:pointer;}
 .loc-tbl tr:hover td{color:var(--text);background:var(--surface2);}
 .loc-tbl tr:focus-visible{outline:2px solid var(--focus);outline-offset:-2px;}
+
+/* model-based grid presets (all → US average) */
+.model-grid-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;}
+.model-grid-lbl{font-size:12px;color:var(--muted);}
+.grid-model-btn{
+  background:var(--surface2);border:1px solid var(--border);border-radius:5px;
+  padding:6px 12px;font-size:12px;font-family:var(--mono);color:var(--text);
+  cursor:pointer;transition:all .15s;
+}
+.grid-model-btn:hover,.grid-model-btn.sel,.grid-model-btn[aria-pressed="true"]{
+  border-color:var(--green);color:var(--green);background:var(--green-dim);
+}
+.grid-or{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;
+  margin:6px 0;text-align:center;}
 </style>
 </head>
 <body>
 
 <!-- ══════════════════════════════════════════
+     INTRO / LANDING SCREEN
+══════════════════════════════════════════ -->
+<main id="intro" aria-labelledby="introTitle">
+<div class="wiz-shell">
+  <div class="wiz-eye" aria-hidden="true">// AI Carbon Calculator</div>
+  <h1 class="intro-title" id="introTitle">Estimate the carbon footprint of your AI usage.</h1>
+
+  <ol class="intro-steps">
+    <li><span class="intro-step-n" aria-hidden="true">1</span><span>Answer 7 plain-English questions about how you use AI.</span></li>
+    <li><span class="intro-step-n" aria-hidden="true">2</span><span>We infer the technical parameters — model, hardware, grid, efficiency.</span></li>
+    <li><span class="intro-step-n" aria-hidden="true">3</span><span>See your CO₂, with cited sources and confidence scores.</span></li>
+  </ol>
+
+  <p class="intro-meta">~2 min · no technical knowledge needed</p>
+
+  <button class="btn btn-calc intro-start" onclick="startQuiz()" type="button">Start quiz →</button>
+</div>
+</main>
+
+<!-- ══════════════════════════════════════════
      WIZARD SCREEN
 ══════════════════════════════════════════ -->
-<main id="wizard" aria-labelledby="wizTitle">
+<main id="wizard" aria-labelledby="wizTitle" style="display:none">
 <div class="wiz-shell">
   <div class="wiz-eye" aria-hidden="true">// AI Carbon Calculator</div>
   <h1 class="wiz-title" id="wizTitle">Let's profile your AI usage</h1>
-  <p class="wiz-sub">8 quick questions. No technical knowledge needed — we'll infer the parameters from your answers.</p>
+  <p class="wiz-sub">7 quick questions. No technical knowledge needed — we'll infer the parameters from your answers.</p>
 
   <div class="prog-label" aria-live="polite" aria-atomic="true">
     <span id="stepLabel">Question 1 of 8</span>
@@ -428,7 +511,9 @@ input[type=number]{font-family:var(--mono);}
         <label>AI tool</label>
         <select id="tool" onchange="onToolChange()">
           <option value="claude">Claude (Anthropic)</option>
-          <option value="other">Other LLM / internal tool</option>
+          <option value="fuelix">FuelIX (Telus)</option>
+          <option value="gpt">GPT (OpenAI)</option>
+          <option value="gemini">Gemini (Google)</option>
         </select>
       </div>
 
@@ -570,7 +655,16 @@ input[type=number]{font-family:var(--mono);}
                oninput="document.getElementById('gridLbl').textContent=this.value+' g CO₂/kWh';
                         this.setAttribute('aria-valuetext', this.value+' grams per kilowatt hour');
                         updateGridHighlight();recalc();">
-        <div class="hint" style="margin-bottom:8px">Drag the slider or activate a region below.</div>
+        <div class="hint" style="margin-bottom:8px">Drag the slider, pick a hosted model, or choose a region.</div>
+
+        <div class="model-grid-row" role="group" aria-label="Common hosted models — sets the US grid average">
+          <span class="model-grid-lbl" aria-hidden="true">Hosted model:</span>
+          <button type="button" class="grid-model-btn" aria-pressed="false" onclick="setModelGrid(400, this)">Claude</button>
+          <button type="button" class="grid-model-btn" aria-pressed="false" onclick="setModelGrid(400, this)">GPT</button>
+          <button type="button" class="grid-model-btn" aria-pressed="false" onclick="setModelGrid(400, this)">Gemini</button>
+        </div>
+        <div class="hint" style="margin-bottom:6px">Claude, GPT and Gemini run predominantly in US data centres (~400 g CO₂/kWh). Adjust by region below if you know where yours runs.</div>
+        <div class="grid-or" aria-hidden="true">— or pick a region —</div>
         <table class="loc-tbl" id="locTbl" role="listbox" aria-label="Quick grid presets">
           <tbody>
           <tr data-g="136" class="active-loc" role="option" tabindex="0" aria-selected="true"><td>🇧🇷 Brazil (hydro-heavy)</td><td>136 g/kWh</td></tr>
@@ -597,6 +691,11 @@ input[type=number]{font-family:var(--mono);}
       <div class="pertok-row">
         <span style="font-size:13px;color:var(--muted)">g CO₂ per token</span>
         <span class="rnum cg" id="r-pertok" style="font-size:17px" aria-label="Grams of CO2 per token">—</span>
+      </div>
+
+      <div class="disclosure" role="note">
+        <span class="disclosure-icon" aria-hidden="true">⚠️</span>
+        <span><b>This is probably an underestimate.</b> It counts operational inference energy plus amortised GPU manufacturing only. Because providers don't disclose full life-cycle data for LLMs or their infrastructure — model training, networking, cooling water, and the embodied carbon of non-GPU hardware are all excluded — your real footprint is likely higher.</span>
       </div>
 
       <div class="igroup" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
@@ -640,19 +739,17 @@ input[type=number]{font-family:var(--mono);}
 // ═══════════════════════════════════════════════════════════
 const STEPS = [
   {
-    id: 'location',
-    q: 'Where are you located — or where do you think your AI servers are hosted?',
-    hint: 'This determines the carbon intensity of the electricity powering your AI. If you\'re unsure about servers, use your own location as a starting point.',
-    why: 'Grid carbon intensity is the single most variable factor in the calculation — the same query on a coal-heavy grid emits up to 50× more CO₂ than on a hydro grid.',
-    type: 'choice',
+    id: 'ai_tool',
+    q: 'Which AI tools do you mainly use?',
+    hint: 'Select all that apply. The first one you pick is treated as your main tool: it sets the model energy profile and the likely hosting region. The others are noted but don\'t change the estimate.',
+    why: 'Different tools run different-sized models on different clouds — and that hosting location sets the grid carbon intensity, the single most variable factor in the calculation.',
+    type: 'multichoice',
     cols: 2,
     options: [
-      { main:'🇧🇷 Brazil', sub:'Hydro-heavy · ~136 g/kWh', val:'BR' },
-      { main:'🇨🇦 Canada (BC/Quebec)', sub:'Hydro-dominant · ~15–40 g/kWh', val:'CA_CLEAN' },
-      { main:'🇨🇦 Canada (other)', sub:'National avg · ~120 g/kWh', val:'CA_AVG' },
-      { main:'🇺🇸 United States', sub:'Avg coal+gas mix · ~400 g/kWh', val:'US' },
-      { main:'🇪🇺 Western Europe', sub:'Mixed / nuclear · ~200 g/kWh', val:'EU' },
-      { main:'🌍 Other / unsure', sub:'Use global avg · ~475 g/kWh', val:'OTHER' },
+      { main:'Claude', sub:'Anthropic · US-hosted (AWS/GCP)', val:'claude' },
+      { main:'FuelIX', sub:'TELUS · Canadian sovereign infra', val:'fuelix' },
+      { main:'GPT',    sub:'OpenAI · US-hosted (Azure)',      val:'gpt' },
+      { main:'Gemini', sub:'Google · US-hosted (GCP)',        val:'gemini' },
     ]
   },
   {
@@ -708,15 +805,6 @@ const STEPS = [
     q: '"I use AI tools multiple times a day, most working days."',
     hint: 'This helps us judge whether your token figure reflects heavy or light personal usage, and scale annualised impact.',
     why: 'Frequency calibrates the annualised projection in the comparison panel.',
-    type: 'likert',
-    opts: ['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'],
-    vals: [0,1,2,3,4]
-  },
-  {
-    id: 'server_location',
-    q: '"I\'m not sure where the servers running my AI tools are physically located."',
-    hint: 'If you know your servers are in a specific region (e.g. your company uses data centres in a particular country), that overrides your personal location for grid intensity.',
-    why: 'Physical server location, not user location, determines which grid the energy comes from. This flags whether we should use your location or a default.',
     type: 'likert',
     opts: ['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'],
     vals: [0,1,2,3,4]
@@ -792,6 +880,24 @@ function renderStep(idx) {
     html += `</div></fieldset>`;
   }
 
+  else if (s.type === 'multichoice') {
+    html += `<fieldset style="border:none;padding:0;margin:0">
+      <legend class="sr-only">${escapeHtml(s.q)}</legend>
+      <div class="choice-grid ${s.cols===2?'cols2':'cols1'}" role="group" aria-labelledby="${qId}" aria-describedby="${hintId}">`;
+    const cur = answers[s.id] || [];
+    s.options.forEach((o, i) => {
+      const checked = cur.includes(i);
+      html += `<button type="button" class="choice-opt ${checked?'selected':''}"
+                       role="checkbox" aria-checked="${checked?'true':'false'}"
+                       data-step="${s.id}" data-idx="${i}"
+                       onclick="toggleMulti('${s.id}', ${i}, this)">
+        <span class="choice-main">${escapeHtml(o.main)}</span>
+        <span class="choice-sub">${escapeHtml(o.sub)}</span>
+      </button>`;
+    });
+    html += `</div></fieldset>`;
+  }
+
   else if (s.type === 'tokens') {
     const saved = answers[s.id] || '';
     const tokInputId = 'tokInput';
@@ -807,7 +913,9 @@ function renderStep(idx) {
       <div class="tok-presets" role="group" aria-label="Quick token estimates">
         <span style="font-size:12px;color:var(--muted);align-self:center" aria-hidden="true">Quick estimate:</span>
         ${[['500K','occasional use',500000],['5M','regular use',5000000],
-           ['10M','heavy use',10000000],['50M','power user / team',50000000]]
+           ['10M','heavy use',10000000],['50M','very heavy use',50000000],
+           ['100M','constant use',100000000],['500M','automation / pipeline',500000000],
+           ['1B','power user / team',1000000000]]
           .map(([l,s,v])=>`<button type="button"
               class="tok-preset ${saved==v?'sel':''}"
               data-val="${v}"
@@ -856,6 +964,18 @@ function selectChoice(id, val, el) {
   validateStep();
 }
 
+// Multi-select (checkbox) toggle. answers[id] is an array of option indices in
+// selection order — index 0 is the user's primary/main tool.
+function toggleMulti(id, idx, el) {
+  const arr = answers[id] || (answers[id] = []);
+  const pos = arr.indexOf(idx);
+  if (pos >= 0) arr.splice(pos, 1); else arr.push(idx);
+  const on = arr.includes(idx);
+  el.classList.toggle('selected', on);
+  el.setAttribute('aria-checked', on ? 'true' : 'false');
+  validateStep();
+}
+
 /* Arrow-key navigation for choice radiogroup (WAI-ARIA radio pattern) */
 function choiceKey(ev, el) {
   const opts = Array.from(document.querySelectorAll('.choice-opt'));
@@ -893,6 +1013,7 @@ function validateStep() {
   const s = STEPS[currentStep];
   let ok = false;
   if (s.type === 'likert' || s.type === 'choice') ok = answers[s.id] !== undefined;
+  if (s.type === 'multichoice') ok = Array.isArray(answers[s.id]) && answers[s.id].length > 0;
   if (s.type === 'tokens') ok = answers.tokens > 0;
   document.getElementById('btnNext').disabled = !ok;
 }
@@ -913,25 +1034,39 @@ function wizBack() {
   }
 }
 
+function startQuiz() {
+  document.getElementById('intro').style.display  = 'none';
+  document.getElementById('wizard').style.display = 'flex';
+  currentStep = 0;
+  renderStep(0);
+}
+
 // ═══════════════════════════════════════════════════════════
 // INFERENCE ENGINE
 // ═══════════════════════════════════════════════════════════
 
-// Grid intensity by location answer index
-const GRID_MAP = { BR:136, CA_CLEAN:22, CA_AVG:120, US:400, EU:200, OTHER:475 };
-const LOC_VALS  = ['BR','CA_CLEAN','CA_AVG','US','EU','OTHER'];
+// AI tools (Q1 multi-select) → energy model + predominant hosting grid.
+const TOOL_KEYS   = ['claude', 'fuelix', 'gpt', 'gemini'];   // index order matches the Q1 options
+const TOOL_LABELS = { claude:'Claude', fuelix:'FuelIX', gpt:'GPT', gemini:'Gemini' };
+const TOOL_GRID   = { claude:400, fuelix:120, gpt:400, gemini:400 };  // g CO₂/kWh of predominant region
+const TOOL_HOST   = {
+  claude:'US data centres (AWS / Google Cloud)',
+  gpt:   'US data centres (Microsoft Azure)',
+  gemini:'US data centres (Google Cloud)',
+  fuelix:'Canadian sovereign infrastructure (TELUS)',
+};
 
 // Output pct from Q4 likert (index 0–4)
 const OUT_PCT_MAP = [15, 30, 50, 72, 85];
 
-// Model tier from Q5 (task_type) × Q6 (interactive) heuristic
-function inferModel(taskIdx, interactiveIdx) {
-  // task=0 simple, task=4 complex
-  // interactive: high = lower model tier needed
-  const score = taskIdx - (interactiveIdx > 2 ? 1 : 0);
-  if (score <= 1) return 'haiku';
-  if (score <= 3) return 'sonnet';
-  return 'opus';
+// Model tier from Q5 (task_type) alone. Task complexity is what maps to a
+// model tier; interactivity (Q6) only affects GPU utilisation (see inferUtil),
+// so it must NOT pull the tier down — otherwise a very-complex but interactive
+// user is wrongly inferred as Sonnet instead of Opus.
+function inferModel(taskIdx) {
+  if (taskIdx <= 1) return 'haiku';   // strongly disagree / disagree → simple lookups
+  if (taskIdx <= 3) return 'sonnet';  // neutral / agree → moderate to complex
+  return 'opus';                      // strongly agree → very complex reasoning
 }
 
 // GPU from hardware answer
@@ -953,35 +1088,43 @@ function inferUtil(interIdx, freqIdx) {
   return Math.min(90, Math.max(20, base + freqAdj));
 }
 
-// Grid intensity: if server_location uncertain (Q8 agree/strongly agree), use location answer
-// otherwise warn user to check
-function inferGrid(locIdx, serverUncertainIdx) {
-  const locKey = LOC_VALS[locIdx] || 'OTHER';
-  return GRID_MAP[locKey];
+// Primary tool + task complexity → the MODEL_SPECS id used for the estimate.
+function inferToolModel(toolKey, taskIdx) {
+  if (toolKey === 'claude') return inferModel(taskIdx);  // haiku / sonnet / opus
+  if (toolKey === 'fuelix') return 'fuelix_medium';
+  return toolKey;                                        // 'gpt' | 'gemini'
 }
 
 function buildInference() {
-  const locIdx       = answers.location   ?? 0;
-  const hwIdx        = answers.hardware   ?? 3;
-  const outPctIdx    = answers.output_ratio ?? 4;   // default: strongly agree (Queen Bi!)
-  const taskIdx      = answers.task_type  ?? 3;
-  const interIdx     = answers.interactive ?? 3;
-  const freqIdx      = answers.frequency  ?? 3;
-  const serverUncIdx = answers.server_location ?? 3;
+  const toolSel    = (answers.ai_tool && answers.ai_tool.length) ? answers.ai_tool : [0];
+  const primaryKey = TOOL_KEYS[toolSel[0]] || 'claude';
+  const alsoUsing  = toolSel.slice(1).map(i => TOOL_KEYS[i]).filter(Boolean);
+
+  const hwIdx     = answers.hardware    ?? 3;
+  const outPctIdx = answers.output_ratio ?? 4;   // default: strongly agree (Queen Bi!)
+  const taskIdx   = answers.task_type   ?? 3;
+  const interIdx  = answers.interactive ?? 3;
+  const freqIdx   = answers.frequency   ?? 3;
+
+  const model = inferToolModel(primaryKey, taskIdx);
 
   return {
     tokens:   answers.tokens || 2_800_000,
-    grid:     inferGrid(locIdx, serverUncIdx),
+    tool:     primaryKey,
+    alsoUsing,
+    grid:     TOOL_GRID[primaryKey],
     outPct:   OUT_PCT_MAP[outPctIdx],
-    model:    inferModel(taskIdx, interIdx),
+    model,
     gpu:      inferGPU(hwIdx),
     pue:      inferPUE(hwIdx),
     util:     inferUtil(interIdx, freqIdx),
     // reasons
     reasons: {
-      grid:   `From your location (${['Brazil','Canada BC/QC','Canada avg','United States','Western Europe','Other'][locIdx]}). ${serverUncIdx >= 3 ? 'Server location unknown — using your region.' : 'You indicated you know server location — verify below.'}`,
+      grid:   `${TOOL_LABELS[primaryKey]} runs predominantly on ${TOOL_HOST[primaryKey]} → ${TOOL_GRID[primaryKey]} g CO₂/kWh.${primaryKey === 'fuelix' ? ' TELUS AI infrastructure sits in hydro-heavy provinces, so the real figure may be lower — refine by region.' : ' Refine by region below if you know where yours runs.'}`,
       outPct: `You ${['strongly disagree','disagree','are neutral','agree','strongly agree'][outPctIdx]} that your queries are shorter than answers. → ${OUT_PCT_MAP[outPctIdx]}% output.`,
-      model:  `Task complexity (${['very simple','simple','moderate','complex','very complex'][taskIdx]}) + interactive use → ${inferModel(taskIdx,interIdx)} tier.`,
+      model:  primaryKey === 'claude'
+                ? `Main tool Claude · task complexity (${['very simple','simple','moderate','complex','very complex'][taskIdx]}) → ${model} tier.`
+                : `Main tool ${TOOL_LABELS[primaryKey]} → ${MODEL_SPECS[model].label} energy profile.`,
       gpu:    `Inferred from "${['cloud API/browser','company-managed cloud','on-premise servers','unknown'][hwIdx]}" infrastructure.`,
       pue:    `Data centre type → PUE ${inferPUE(hwIdx).toFixed(2)}. ${[' (hyperscaler efficiency)',' (managed cloud)',' (on-prem, less efficient)',' (conservative default)'][hwIdx]||''}`,
       util:   `${['Batch/non-interactive','Mostly automated','Mixed','Mostly interactive','Fully interactive'][interIdx]} use + ${['rare','occasional','regular','frequent','very frequent'][freqIdx]} frequency → ${inferUtil(interIdx,freqIdx)}% utilisation.`,
@@ -999,9 +1142,10 @@ function showInference() {
   screen.style.display = 'flex';
 
   const cards = [
+    { param:'AI tool', val: TOOL_LABELS[inferred.tool] + (inferred.alsoUsing.length ? ' + ' + inferred.alsoUsing.map(k=>TOOL_LABELS[k]).join(', ') : ''), reason: inferred.alsoUsing.length ? `Primary tool <b>${TOOL_LABELS[inferred.tool]}</b> drives the estimate; also-used tools are noted but don't change the number.` : `Primary tool <b>${TOOL_LABELS[inferred.tool]}</b> drives the estimate.`, sliderId:null },
     { param:'Grid intensity', val: inferred.grid + ' g CO₂/kWh', reason: inferred.reasons.grid, sliderId:'infGrid', min:15, max:800, step:5, current:inferred.grid, unit:'g/kWh' },
     { param:'Output token %', val: inferred.outPct + '%', reason: inferred.reasons.outPct, sliderId:'infOut', min:5, max:95, step:1, current:inferred.outPct, unit:'%' },
-    { param:'Model tier', val: inferred.model, reason: inferred.reasons.model, sliderId:null },
+    { param:'Model tier', val: MODEL_SPECS[inferred.model].label, reason: inferred.reasons.model, sliderId:null },
     { param:'GPU type', val: inferred.gpu.toUpperCase(), reason: inferred.reasons.gpu, sliderId:null },
     { param:'PUE', val: inferred.pue.toFixed(2), reason: `<b>Power Usage Effectiveness</b> — ratio of total data centre energy to the energy actually used by computing hardware. A PUE of ${inferred.pue.toFixed(2)} means that for every 1 kWh the GPU consumes, ${inferred.pue.toFixed(2)} kWh are drawn from the grid — the extra ${(inferred.pue - 1).toFixed(2)} kWh goes to cooling, networking, and lighting. ${inferred.reasons.pue}`, sliderId:'infPue', min:1.0, max:2.5, step:0.05, current:inferred.pue, unit:'' },
     { param:'Utilisation', val: inferred.util + '%', reason: inferred.reasons.util, sliderId:'infUtil', min:10, max:100, step:5, current:inferred.util, unit:'%' },
@@ -1046,16 +1190,18 @@ function showCalc() {
   document.getElementById('util').value     = inferred.util;
   document.getElementById('utilLbl').textContent = inferred.util + '%';
 
-  // model
-  const tool = inferred.gpu === 'a100pcie' ? 'other' : 'claude';
-  // keep claude as default, set model
-  if (['haiku','sonnet','opus','mix'].includes(inferred.model)) {
+  // tool + model
+  document.getElementById('tool').value = inferred.tool;
+  if (inferred.tool === 'claude' && ['haiku','sonnet','opus','mix'].includes(inferred.model)) {
     document.getElementById('claudeModel').value = inferred.model;
+  } else if (inferred.tool === 'fuelix') {
+    document.getElementById('fuelixModel').value = inferred.model;
   }
 
   // gpu
   document.getElementById('gpu').value = inferred.gpu;
 
+  onToolChange();          // reveal the right model sub-dropdown (also recalcs)
   updateGridHighlight();
   recalc();
 }
@@ -1079,13 +1225,15 @@ const GPU_SPECS = {
 };
 
 const MODEL_SPECS = {
-  haiku:         { label:'Claude Haiku',           input:0.000090, output:0.000450 },
+  haiku:         { label:'Claude Haiku',            input:0.000090, output:0.000450 },
   sonnet:        { label:'Claude Sonnet',           input:0.000390, output:0.001950 },
   opus:          { label:'Claude Opus',             input:0.000780, output:0.003900 },
   mix:           { label:'Claude Mix (60S/30H/10O)',input:0.000316, output:0.001580 },
-  fuelix_small:  { label:'Other LLM (small ~7B)',       input:0.000080, output:0.000400 },
-  fuelix_medium: { label:'Other LLM (medium ~20B)',     input:0.000250, output:0.001250 },
-  fuelix_large:  { label:'Other LLM (large ~70B+)',     input:0.000600, output:0.003000 },
+  gpt:           { label:'GPT-4o class',            input:0.000390, output:0.001950 },  // Epoch AI GPT-4o (same source as Sonnet)
+  gemini:        { label:'Gemini',                  input:0.000310, output:0.001560 },  // ~0.8× GPT (Google 0.24 Wh/prompt)
+  fuelix_small:  { label:'FuelIX (small ~7B)',      input:0.000080, output:0.000400 },
+  fuelix_medium: { label:'FuelIX (medium ~20B)',    input:0.000250, output:0.001250 },
+  fuelix_large:  { label:'FuelIX (large ~70B+)',    input:0.000600, output:0.003000 },
 };
 
 const KM_PER_KG  = 6.0;
@@ -1094,9 +1242,9 @@ const CARB_PRICE = 50;
 
 function getCalcInputs() {
   const tool    = document.getElementById('tool').value;
-  const modelId = tool === 'claude'
-    ? document.getElementById('claudeModel').value
-    : document.getElementById('fuelixModel').value;
+  const modelId = tool === 'claude'  ? document.getElementById('claudeModel').value
+                : tool === 'fuelix'  ? document.getElementById('fuelixModel').value
+                : tool;  // 'gpt' | 'gemini' map directly to a MODEL_SPECS key
   return {
     tool, modelId,
     tokens:  +document.getElementById('tokens').value || 2_800_000,
@@ -1133,6 +1281,37 @@ function fmt(n, d=2) {
   return n.toFixed(d);
 }
 
+// ── Human-scale formatting for the calculation trace ──
+// Pick a single unit for a group of values (keyed off the largest) so the
+// ledger column stays comparable, and choose decimals by magnitude.
+function pickScale(v, units) {
+  const a = Math.abs(v);
+  for (const [threshold, factor, unit] of units) {
+    if (a >= threshold) return { f: factor, u: unit };
+  }
+  const last = units[units.length - 1];
+  return { f: last[1], u: last[2] };
+}
+const energyScale = kWh => pickScale(kWh, [[1, 1, 'kWh'], [1e-3, 1e-3, 'Wh'], [0, 1e-6, 'mWh']]);
+const massScale   = kg  => pickScale(kg,  [[1, 1, 'kg'],  [1e-3, 1e-3, 'g'],  [0, 1e-6, 'mg']]);
+
+// Decimals for a display value (after dividing by scale factor).
+function scaleDecimals(displayVal) {
+  const a = Math.abs(displayVal);
+  return a >= 100 ? 1 : a >= 1 ? 2 : 3;
+}
+// Returns a formatter that renders any raw value in the chosen unit/decimals.
+function groupFormatter(largestRaw, scale) {
+  const d = scaleDecimals(largestRaw / scale.f);
+  return raw => (raw / scale.f).toFixed(d) + ' ' + scale.u;
+}
+// Per-token figure: mg/token, dropping to µg/token when very small.
+function fmtPerTok(g) {
+  const mg = g * 1000;
+  if (mg >= 0.1) return mg.toFixed(2) + ' mg / token';
+  return (g * 1e6).toFixed(1) + ' µg / token';
+}
+
 function recalc() {
   const p = getCalcInputs();
   const r = computeCarbon(p, p.modelId, p.tokens);
@@ -1143,38 +1322,42 @@ function recalc() {
   document.getElementById('r-cost').textContent  = '$' + fmt((r.totalKg/1000)*CARB_PRICE, 2);
   document.getElementById('r-pertok').textContent = r.perTok_g.toExponential(3) + ' g';
 
+  // Calculation trace — ledger layout with one shared unit per group.
+  const eScale = energyScale(r.eTotal);   // eTotal is the largest energy value
+  const eFmt   = groupFormatter(r.eTotal, eScale);
+  const cScale = massScale(r.totalKg);    // totalKg is the largest carbon value
+  const cFmt   = groupFormatter(r.totalKg, cScale);
+
   document.getElementById('eqbox').innerHTML = `
-<span class="elbl">Model: ${r.m.label} · GPU: ${r.gpu.label} (${r.gpu.tdp}W TDP)</span>
+    <div class="eqledger">
+      <div class="eq-head">${r.m.label} · ${r.gpu.label} (${r.gpu.tdp}W)</div>
 
-<span class="elbl">① Raw energy</span>
-  (${fmt(r.inTok/1e3,0)}k input × ${r.m.input} kWh/kTok) <span class="eop">+</span> (${fmt(r.outTok/1e3,0)}k output × ${r.m.output} kWh/kTok)
-  <span class="eop">=</span> <span class="ev">${r.eRaw.toExponential(4)} kWh</span>
+      <div class="eq-sec">Energy</div>
+      <div class="eq-row"><span>Raw (input + output)</span><span class="eq-val">${eFmt(r.eRaw)}</span></div>
+      <div class="eq-row"><span>÷ utilisation ${fmt(p.util*100,0)}%</span><span class="eq-val">${eFmt(r.eUtil)}</span></div>
+      <div class="eq-row"><span>× PUE ${p.pue.toFixed(2)}</span><span class="eq-val">${eFmt(r.eTotal)}</span></div>
 
-<span class="elbl">② Utilisation  (÷ ${fmt(p.util*100,0)}%)</span>
-  <span class="eop">=</span> <span class="ev">${r.eUtil.toExponential(4)} kWh</span>
+      <div class="eq-sec">Carbon</div>
+      <div class="eq-row"><span>× grid ${p.grid} g/kWh <span class="eq-tag">operational</span></span><span class="eq-val">${cFmt(r.opKg)}</span></div>
+      <div class="eq-row"><span>+ GPU embodied <span class="eq-tag">lifecycle</span></span><span class="eq-val">${cFmt(r.embodiedKg)}</span></div>
 
-<span class="elbl">③ PUE overhead  (× ${p.pue})</span>
-  <span class="eop">=</span> <span class="ev">${r.eTotal.toExponential(4)} kWh</span>
+      <div class="eq-total"><span>Total</span><span class="eq-val">${cFmt(r.totalKg)} CO₂</span></div>
+      <div class="eq-pertok">${fmtPerTok(r.perTok_g)}</div>
+    </div>`;
 
-<span class="elbl">④ Operational carbon  (× ${p.grid} g/kWh)</span>
-  <span class="eop">=</span> <span class="ev">${fmt(r.opKg,5)} kg CO₂</span>
-
-<span class="elbl">⑤ Embodied carbon  (GPU lifecycle amortisation)</span>
-  <span class="eop">=</span> <span class="ev">${fmt(r.embodiedKg,5)} kg CO₂</span>
-
-<span class="elbl">⑥ Total</span>
-  <span class="eop">=</span> <span class="ev"><b>${fmt(r.totalKg,4)} kg CO₂  ·  ${r.perTok_g.toExponential(3)} g/token</b></span>`;
-
-  // Scenario comparison
-  const tool = p.tool;
-  const scenarios = tool === 'claude'
-    ? [{id:'haiku',col:'cb',lbl:'Claude Haiku'},{id:p.modelId,col:'cg',lbl:r.m.label+' ★'},{id:'opus',col:'ca',lbl:'Claude Opus'}]
-    : [{id:'fuelix_small',col:'cb',lbl:'Small (~7B)'},{id:p.modelId,col:'cg',lbl:r.m.label+' ★'},{id:'fuelix_large',col:'ca',lbl:'Large (~70B+)'}];
-
-  document.getElementById('cmpGrid').innerHTML = scenarios.map(s => {
+  // Scenario comparison — always Claude Haiku / Sonnet / Opus, independent of
+  // the selected tool/model, so the per-tier energy trade-off is always shown.
+  // A ★ marks the tier currently in use (none if an "other" model is selected).
+  const CMP_MODELS = [
+    { id:'haiku',  col:'cb', lbl:'Claude Haiku'  },
+    { id:'sonnet', col:'cg', lbl:'Claude Sonnet' },
+    { id:'opus',   col:'ca', lbl:'Claude Opus'   },
+  ];
+  document.getElementById('cmpGrid').innerHTML = CMP_MODELS.map(s => {
     const rc = computeCarbon(p, s.id, p.tokens);
+    const star = s.id === p.modelId ? ' ★' : '';
     return `<div class="cmp-cell">
-      <div class="cmp-name">${s.lbl}</div>
+      <div class="cmp-name">${s.lbl}${star}</div>
       <div class="cmp-val ${s.col}">${fmt(rc.totalKg,3)} kg</div>
       <div class="cmp-sub">${rc.perTok_g.toExponential(2)} g/tok · ${fmt(rc.totalKg/TREE_KG_YR,1)} trees/yr</div>
     </div>`;
@@ -1184,7 +1367,7 @@ function recalc() {
   const factors = [
     { lbl:'Token count',          conf:95, note:'Direct measurement from dashboard.' },
     { lbl:'Output token fraction',conf:70, note:'Survey-calibrated. Higher confidence than a generic default.' },
-    { lbl:'Model energy/token',   conf:45, note:'Literature estimates — Anthropic does not publish per-token energy.' },
+    { lbl:'Model energy/token',   conf:45, note:'Literature estimates — Claude & GPT from Epoch AI extrapolation, Gemini from Google’s own figure. Providers rarely publish per-token energy.' },
     { lbl:'Grid carbon intensity',conf:72, note:'National/regional average. Real-time API would improve this.' },
     { lbl:'PUE',                  conf:55, note:'Inferred from infrastructure type. Not disclosed by providers.' },
     { lbl:'Utilisation',          conf:52, note:'Survey-calibrated from usage pattern. Unverified.' },
@@ -1231,12 +1414,28 @@ function updateGridHighlight() {
     tr.classList.toggle('active-loc', match);
     tr.setAttribute('aria-selected', match ? 'true' : 'false');
   });
+  // Any grid change (slider, region, shared link) clears the hosted-model preset.
+  document.querySelectorAll('.grid-model-btn').forEach(b => {
+    b.classList.remove('sel');
+    b.setAttribute('aria-pressed', 'false');
+  });
+}
+
+// Hosted-model presets point the grid at the US average (~400 g/kWh); the user
+// can still refine by region afterwards.
+function setModelGrid(val, btn) {
+  document.getElementById('grid').value = val;
+  document.getElementById('gridLbl').textContent = val + ' g CO₂/kWh';
+  updateGridHighlight();            // re-highlights the matching region row + clears model btns
+  btn.classList.add('sel');         // ...then mark the clicked model
+  btn.setAttribute('aria-pressed', 'true');
+  recalc();
 }
 
 function onToolChange() {
   const t = document.getElementById('tool').value;
   document.getElementById('claudeModelWrap').style.display  = t==='claude'?'':'none';
-  document.getElementById('fuelixModelWrap').style.display  = t==='other'?'':'none';
+  document.getElementById('fuelixModelWrap').style.display  = t==='fuelix'?'':'none';
   recalc();
 }
 
@@ -1293,7 +1492,7 @@ function serializeState() {
     if (!el) continue;
     // Skip the inactive tool's model dropdown
     if (full === 'claudeModel' && document.getElementById('tool').value !== 'claude') continue;
-    if (full === 'fuelixModel' && document.getElementById('tool').value !== 'other')  continue;
+    if (full === 'fuelixModel' && document.getElementById('tool').value !== 'fuelix') continue;
     state[short] = el.value;
   }
   return state;
@@ -1372,12 +1571,13 @@ function applyHashState() {
 
 // ── boot ──
 if (applyHashState()) {
-  // Skip the wizard — recipient lands directly on results
+  // Skip the intro + wizard — recipient lands directly on results
+  document.getElementById('intro').style.display = 'none';
   document.getElementById('wizard').style.display = 'none';
   document.getElementById('calcScreen').style.display = 'block';
-} else {
-  renderStep(0);
 }
+// Otherwise the intro screen is shown by default; the wizard is built
+// only when the user clicks "Start quiz" (see startQuiz()).
 </script>
 </body>
 </html>
