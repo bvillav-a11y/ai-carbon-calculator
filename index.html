@@ -253,11 +253,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 }
 .tok-input-row input:focus{border-color:var(--green);}
 .tok-unit{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap;}
-.tok-presets{display:flex;gap:8px;flex-wrap:wrap;}
+.tok-sub{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--green);
+  font-weight:600;margin-bottom:10px;}
+.tok-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
+.tok-divider{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:11px;margin:18px 0 12px;}
+.tok-divider::before,.tok-divider::after{content:"";flex:1;height:1px;background:var(--divider);}
+.tok-custom-lbl{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);margin-bottom:8px;}
 .tok-preset{
   background:var(--surface2);border:1px solid var(--border);border-radius:5px;
   padding:6px 10px;font-size:12px;font-family:var(--mono);color:var(--text);
-  cursor:pointer;transition:all .15s;
+  cursor:pointer;transition:all .15s;text-align:center;
 }
 .tok-preset:hover,.tok-preset.sel,.tok-preset[aria-pressed="true"]{
   border-color:var(--green);color:var(--green);background:var(--green-dim);
@@ -971,10 +977,25 @@ function renderStep(idx) {
   }
 
   else if (s.type === 'tokens') {
-    const saved = answers[s.id] || '';
+    const saved = answers.tokens || '';
     const tokInputId = 'tokInput';
     html += `<div class="tok-wrap">
-      <label for="${tokInputId}" class="sr-only">Monthly tokens used</label>
+      <div class="tok-sub" aria-hidden="true">Quick estimate</div>
+      <div class="tok-presets" role="group" aria-label="Quick token estimates">
+        ${[['500K','occasional use',500000],['5M','regular use',5000000],
+           ['10M','heavy use',10000000],['50M','very heavy use',50000000],
+           ['100M','constant use',100000000],['500M','automation / pipeline',500000000],
+           ['1B','power user / team',1000000000]]
+          .map(([l,sub,v])=>`<button type="button"
+              class="tok-preset ${saved==v?'sel':''}"
+              data-val="${v}"
+              aria-pressed="${saved==v?'true':'false'}"
+              aria-label="Use ${l} tokens per month — ${sub}"
+              onclick="setTokenPreset(${v},this)">
+              ${l}<br><span class="tok-preset-sub">${sub}</span></button>`).join('')}
+      </div>
+      <div class="tok-divider" aria-hidden="true">or enter your own</div>
+      <label for="${tokInputId}" class="tok-custom-lbl">Exact amount</label>
       <div class="tok-input-row">
         <input type="number" id="${tokInputId}" value="${saved}" min="0" step="100000"
                placeholder="e.g. 2800000"
@@ -982,21 +1003,7 @@ function renderStep(idx) {
                oninput="answers.tokens=+this.value;syncTokenPresets();validateStep();">
         <span class="tok-unit" aria-hidden="true">tokens / month</span>
       </div>
-      <div class="tok-presets" role="group" aria-label="Quick token estimates">
-        <span style="font-size:12px;color:var(--muted);align-self:center" aria-hidden="true">Quick estimate:</span>
-        ${[['500K','occasional use',500000],['5M','regular use',5000000],
-           ['10M','heavy use',10000000],['50M','very heavy use',50000000],
-           ['100M','constant use',100000000],['500M','automation / pipeline',500000000],
-           ['1B','power user / team',1000000000]]
-          .map(([l,s,v])=>`<button type="button"
-              class="tok-preset ${saved==v?'sel':''}"
-              data-val="${v}"
-              aria-pressed="${saved==v?'true':'false'}"
-              aria-label="Use ${l} tokens per month — ${s}"
-              onclick="setTokenPreset(${v},this)">
-              ${l}<br><span class="tok-preset-sub">${s}</span></button>`).join('')}
-      </div>
-      <div class="tok-fallback" id="tokFallback">Don't have dashboard access? Pick a quick estimate above.</div>
+      <div class="tok-fallback" id="tokFallback">Have dashboard access? Enter the exact number above.</div>
     </div>`;
   }
 
