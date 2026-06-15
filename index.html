@@ -434,17 +434,6 @@ input[type=number]{font-family:var(--mono);}
 .loc-tbl tr:hover td{color:var(--text);background:var(--surface2);}
 .loc-tbl tr:focus-visible{outline:2px solid var(--focus);outline-offset:-2px;}
 
-/* model-based grid presets (all → US average) */
-.model-grid-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;}
-.model-grid-lbl{font-size:12px;color:var(--muted);}
-.grid-model-btn{
-  background:var(--surface2);border:1px solid var(--border);border-radius:5px;
-  padding:6px 12px;font-size:12px;font-family:var(--mono);color:var(--text);
-  cursor:pointer;transition:all .15s;
-}
-.grid-model-btn:hover,.grid-model-btn.sel,.grid-model-btn[aria-pressed="true"]{
-  border-color:var(--green);color:var(--green);background:var(--green-dim);
-}
 .grid-or{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;
   margin:6px 0;text-align:center;}
 </style>
@@ -535,7 +524,7 @@ input[type=number]{font-family:var(--mono);}
 
       <div class="igroup">
         <label>AI tool</label>
-        <select id="tool" onchange="onToolChange()">
+        <select id="tool" onchange="onToolSelect()">
           <option value="claude">Claude (Anthropic)</option>
           <option value="fuelix">FuelIX (Telus)</option>
           <option value="gpt">GPT (OpenAI)</option>
@@ -682,15 +671,8 @@ input[type=number]{font-family:var(--mono);}
                oninput="document.getElementById('gridLbl').textContent=this.value+' g CO₂/kWh';
                         this.setAttribute('aria-valuetext', this.value+' grams per kilowatt hour');
                         updateGridHighlight();recalc();">
-        <div class="hint" style="margin-bottom:8px">Drag the slider, pick a hosted model, or choose a region.</div>
-
-        <div class="model-grid-row" role="group" aria-label="Common hosted models — sets the US grid average">
-          <span class="model-grid-lbl" aria-hidden="true">Hosted model:</span>
-          <button type="button" class="grid-model-btn" aria-pressed="false" onclick="setModelGrid(400, this)">Claude</button>
-          <button type="button" class="grid-model-btn" aria-pressed="false" onclick="setModelGrid(400, this)">GPT</button>
-          <button type="button" class="grid-model-btn" aria-pressed="false" onclick="setModelGrid(400, this)">Gemini</button>
-        </div>
-        <div class="hint" style="margin-bottom:6px">Claude, GPT and Gemini run predominantly in US data centres (~400 g CO₂/kWh). Adjust by region below if you know where yours runs.</div>
+        <div class="hint" style="margin-bottom:8px">Drag the slider or choose a region. The grid defaults to where your selected AI tool runs.</div>
+        <div class="hint" style="margin-bottom:6px">Claude, GPT and Gemini run predominantly in US data centres (~400 g CO₂/kWh); FuelIX runs on Canadian infrastructure (~120). Adjust by region below if you know where yours runs.</div>
         <div class="grid-or" aria-hidden="true">— or pick a region —</div>
         <table class="loc-tbl" id="locTbl" role="listbox" aria-label="Quick grid presets">
           <tbody>
@@ -1515,22 +1497,21 @@ function updateGridHighlight() {
     tr.classList.toggle('active-loc', match);
     tr.setAttribute('aria-selected', match ? 'true' : 'false');
   });
-  // Any grid change (slider, region, shared link) clears the hosted-model preset.
-  document.querySelectorAll('.grid-model-btn').forEach(b => {
-    b.classList.remove('sel');
-    b.setAttribute('aria-pressed', 'false');
-  });
 }
 
-// Hosted-model presets point the grid at the US average (~400 g/kWh); the user
-// can still refine by region afterwards.
-function setModelGrid(val, btn) {
-  document.getElementById('grid').value = val;
-  document.getElementById('gridLbl').textContent = val + ' g CO₂/kWh';
-  updateGridHighlight();            // re-highlights the matching region row + clears model btns
-  btn.classList.add('sel');         // ...then mark the clicked model
-  btn.setAttribute('aria-pressed', 'true');
-  recalc();
+// User-driven tool change: default the grid to where that provider runs, using
+// TOOL_GRID as the single source of truth (FuelIX → ~120, US providers → ~400).
+// Programmatic callers (showCalc, runDefaults, applyHashState) call onToolChange()
+// directly so they don't clobber an already-set or shared-link grid.
+function onToolSelect() {
+  const t = document.getElementById('tool').value;
+  if (TOOL_GRID[t] != null) {
+    const grid = TOOL_GRID[t];
+    document.getElementById('grid').value = grid;
+    document.getElementById('gridLbl').textContent = grid + ' g CO₂/kWh';
+    updateGridHighlight();           // re-highlight the matching region row
+  }
+  onToolChange();
 }
 
 function onToolChange() {
