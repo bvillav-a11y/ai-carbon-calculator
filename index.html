@@ -288,32 +288,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .btn-calc{background:var(--green);color:#0d1117;padding:12px 28px;font-size:14px;}
 .btn-calc:hover{filter:brightness(1.1);}
 
-/* ══════════════════════════════════════════
-   INFERENCE SUMMARY (between wizard & calc)
-══════════════════════════════════════════ */
-#inferScreen{display:none;min-height:100vh;padding:32px 20px;
-  display:none;flex-direction:column;align-items:center;justify-content:center;}
-
-.infer-shell{width:100%;max-width:700px;}
-.infer-title{font-size:20px;font-weight:700;margin-bottom:4px;}
-.infer-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5;}
-
-.infer-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
-
-.infer-card{
-  background:var(--surface);border:1px solid var(--border);border-radius:8px;
-  padding:14px 16px;
-}
-.infer-param{font-size:12px;color:var(--muted);font-family:var(--mono);
-  text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
-.infer-val{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--green);margin-bottom:4px;}
-.infer-reason{font-size:12px;color:var(--muted);line-height:1.5;}
-
-.infer-slider-row{display:flex;align-items:center;gap:10px;margin-top:6px;}
-.infer-slider-row input[type=range]{flex:1;margin:0;}
-.infer-slider-lbl{font-family:var(--mono);font-size:12px;color:var(--amber);min-width:60px;text-align:right;}
-
-.infer-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:8px;}
 .btn-redo{background:none;border:1px solid var(--border);color:var(--text);padding:10px 18px;
   border-radius:7px;font-family:var(--sans);font-size:13px;cursor:pointer;transition:all .2s;}
 .btn-redo:hover,.btn-redo:focus-visible{border-color:var(--muted);color:var(--text);}
@@ -342,6 +316,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .irow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
 label{font-size:13px;font-weight:500;}
 .ival{font-family:var(--mono);font-size:13px;color:var(--blue);}
+.info-tip{display:none;margin-left:6px;color:var(--blue);cursor:help;font-size:12px;}
+.info-tip.on{display:inline;}
 .surveyed{font-family:var(--mono);font-size:11px;color:var(--green);
   background:var(--green-dim);padding:2px 6px;border-radius:3px;margin-left:6px;}
 
@@ -484,7 +460,7 @@ input[type=number]{font-family:var(--mono);}
 
   <ol class="intro-steps">
     <li><span class="intro-step-n" aria-hidden="true">1</span><span>Answer 7 plain-English questions about how you use AI.</span></li>
-    <li><span class="intro-step-n" aria-hidden="true">2</span><span>We infer the technical parameters — model, hardware, grid, efficiency.</span></li>
+    <li><span class="intro-step-n" aria-hidden="true">2</span><span>We infer the technical parameters — model, hardware, grid, efficiency — and you can fine-tune them on the results page.</span></li>
     <li><span class="intro-step-n" aria-hidden="true">3</span><span>See your CO₂, with cited sources and confidence scores.</span></li>
   </ol>
 
@@ -532,25 +508,6 @@ input[type=number]{font-family:var(--mono);}
 </main>
 
 <!-- ══════════════════════════════════════════
-     INFERENCE SUMMARY SCREEN
-══════════════════════════════════════════ -->
-<main id="inferScreen" aria-labelledby="inferTitle" style="display:none;min-height:100vh;padding:40px 20px;
-  display:none;align-items:center;justify-content:center;flex-direction:column;">
-<div class="infer-shell">
-  <div class="wiz-eye" aria-hidden="true">// Survey complete</div>
-  <h2 class="infer-title" id="inferTitle">Here's what we inferred from your answers</h2>
-  <p class="infer-sub">Each parameter was derived from your responses. You can fine-tune any value before running the calculator — the slider turns amber when you override a survey result.</p>
-
-  <div class="infer-grid" id="inferGrid"></div>
-
-  <div class="infer-actions">
-    <button class="btn btn-redo" onclick="retakeSurvey()" type="button">↺ Retake survey</button>
-    <button class="btn btn-calc" onclick="showCalc()" type="button">Calculate my impact →</button>
-  </div>
-</div>
-</main>
-
-<!-- ══════════════════════════════════════════
      CALCULATOR SCREEN
 ══════════════════════════════════════════ -->
 <main id="calcScreen" aria-labelledby="calcTitle" style="display:none;">
@@ -579,7 +536,7 @@ input[type=number]{font-family:var(--mono);}
       </div>
 
       <div class="igroup" id="claudeModelWrap">
-        <label>Claude model</label>
+        <label>Claude model <span class="info-tip" id="tip-model" tabindex="0" role="img"></span></label>
         <div class="hint" style="margin-bottom:6px">Pick the model you use most — we'll base the estimate on that one.</div>
         <select id="claudeModel" onchange="recalc()">
           <option value="haiku">Haiku — fast / light tasks</option>
@@ -607,7 +564,7 @@ input[type=number]{font-family:var(--mono);}
 
       <div class="igroup" style="margin-top:8px">
         <div class="irow">
-          <label>Output token fraction <span class="surveyed">from survey</span></label>
+          <label>Output token fraction <span class="surveyed">from survey</span> <span class="info-tip" id="tip-out" tabindex="0" role="img"></span></label>
           <span class="ival" id="outPctLbl">75%</span>
         </div>
         <input type="range" id="outPct" min="5" max="95" value="75"
@@ -632,7 +589,7 @@ input[type=number]{font-family:var(--mono);}
       <div class="clabel">Hardware</div>
 
       <div class="igroup">
-        <label>GPU type <span class="surveyed">from survey</span></label>
+        <label>GPU type <span class="surveyed">from survey</span> <span class="info-tip" id="tip-gpu" tabindex="0" role="img"></span></label>
         <select id="gpu" onchange="recalc()">
           <option value="h100">NVIDIA H100 SXM5 (700W) — frontier cloud</option>
           <option value="a100" selected>NVIDIA A100 SXM4 (400W) — common cloud</option>
@@ -643,7 +600,7 @@ input[type=number]{font-family:var(--mono);}
 
       <div class="igroup">
         <div class="irow">
-          <label>Hardware utilisation <span class="surveyed">from survey</span></label>
+          <label>Hardware utilisation <span class="surveyed">from survey</span> <span class="info-tip" id="tip-util" tabindex="0" role="img"></span></label>
           <span class="ival" id="utilLbl">60%</span>
         </div>
         <input type="range" id="util" min="10" max="100" value="60"
@@ -657,7 +614,7 @@ input[type=number]{font-family:var(--mono);}
 
       <div class="igroup">
         <div class="irow">
-          <label>PUE — data centre overhead <span class="surveyed">from survey</span></label>
+          <label>PUE — data centre overhead <span class="surveyed">from survey</span> <span class="info-tip" id="tip-pue" tabindex="0" role="img"></span></label>
           <span class="ival" id="pueLbl">1.40</span>
         </div>
         <input type="range" id="pue" min="1.0" max="2.5" step="0.05" value="1.4"
@@ -708,7 +665,7 @@ input[type=number]{font-family:var(--mono);}
 
       <div class="igroup">
         <div class="irow">
-          <label>Grid carbon intensity</label>
+          <label>Grid carbon intensity <span class="info-tip" id="tip-grid" tabindex="0" role="img"></span></label>
           <span class="ival" id="gridLbl">136 g CO₂/kWh</span>
         </div>
         <input type="range" id="grid" min="15" max="800" step="5" value="136"
@@ -1103,7 +1060,8 @@ function wizNext() {
     currentStep++;
     renderStep(currentStep);
   } else {
-    showInference();
+    inferred = buildInference();
+    showCalc();
   }
 }
 
@@ -1175,6 +1133,21 @@ function inferToolModel(toolKey, taskIdx) {
   return toolKey;                                        // 'gpt' | 'gemini'
 }
 
+// Inference reasons surfaced as ℹ️ tooltips on the matching calculator controls
+// (replaces the old standalone inference screen).
+function stripTags(html){ const d = document.createElement('div'); d.innerHTML = html; return d.textContent || ''; }
+function setTip(id, html){
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!html){ el.classList.remove('on'); el.removeAttribute('title'); el.removeAttribute('aria-label'); el.textContent=''; return; }
+  const text = stripTags(html);
+  el.textContent = 'ℹ️';
+  el.title = text;
+  el.setAttribute('aria-label', 'How this was inferred: ' + text);
+  el.classList.add('on');
+}
+function clearTips(){ ['tip-model','tip-out','tip-grid','tip-pue','tip-util','tip-gpu'].forEach(id => setTip(id, '')); }
+
 function buildInference() {
   const toolSel    = (answers.ai_tool && answers.ai_tool.length) ? answers.ai_tool : [0];
   const primaryKey = TOOL_KEYS[toolSel[0]] || 'claude';
@@ -1214,49 +1187,10 @@ function buildInference() {
 
 let inferred = {};
 
-function showInference() {
-  inferred = buildInference();
-  document.getElementById('wizard').style.display = 'none';
-
-  const screen = document.getElementById('inferScreen');
-  screen.style.display = 'flex';
-
-  const cards = [
-    { param:'AI tool', val: TOOL_LABELS[inferred.tool] + (inferred.alsoUsing.length ? ' + ' + inferred.alsoUsing.map(k=>TOOL_LABELS[k]).join(', ') : ''), reason: inferred.alsoUsing.length ? `Primary tool <b>${TOOL_LABELS[inferred.tool]}</b> drives the estimate; also-used tools are noted but don't change the number.` : `Primary tool <b>${TOOL_LABELS[inferred.tool]}</b> drives the estimate.`, sliderId:null },
-    { param:'Grid intensity', val: inferred.grid + ' g CO₂/kWh', reason: inferred.reasons.grid, sliderId:'infGrid', min:15, max:800, step:5, current:inferred.grid, unit:'g/kWh' },
-    { param:'Output token %', val: inferred.outPct + '%', reason: inferred.reasons.outPct, sliderId:'infOut', min:5, max:95, step:1, current:inferred.outPct, unit:'%' },
-    { param:'Model tier', val: MODEL_SPECS[inferred.model].label, reason: inferred.reasons.model, sliderId:null },
-    { param:'GPU type', val: inferred.gpu.toUpperCase(), reason: inferred.reasons.gpu, sliderId:null },
-    { param:'PUE', val: inferred.pue.toFixed(2), reason: `<b>Power Usage Effectiveness</b> — ratio of total data centre energy to the energy actually used by computing hardware. A PUE of ${inferred.pue.toFixed(2)} means that for every 1 kWh the GPU consumes, ${inferred.pue.toFixed(2)} kWh are drawn from the grid — the extra ${(inferred.pue - 1).toFixed(2)} kWh goes to cooling, networking, and lighting. ${inferred.reasons.pue}`, sliderId:'infPue', min:1.0, max:2.5, step:0.05, current:inferred.pue, unit:'' },
-    { param:'Utilisation', val: inferred.util + '%', reason: inferred.reasons.util, sliderId:'infUtil', min:10, max:100, step:5, current:inferred.util, unit:'%' },
-  ];
-
-  document.getElementById('inferGrid').innerHTML = cards.map(c => {
-    const valId = `iv_${c.sliderId||c.param.replace(/\s/g,'')}`;
-    return `
-    <div class="infer-card">
-      <div class="infer-param" id="${valId}_label">${c.param}</div>
-      <div class="infer-val" id="${valId}" aria-live="polite">${c.val}</div>
-      <div class="infer-reason">${c.reason}</div>
-      ${c.sliderId ? `
-      <div class="infer-slider-row">
-        <input type="range" id="${c.sliderId}"
-               min="${c.min}" max="${c.max}" step="${c.step}" value="${c.current}"
-               aria-labelledby="${valId}_label"
-               aria-valuetext="${c.val}"
-               oninput="document.getElementById('${valId}').textContent=
-                 (this.id==='infPue'?parseFloat(this.value).toFixed(2):this.value)+'${c.unit}';
-                 this.setAttribute('aria-valuetext', document.getElementById('${valId}').textContent);
-                 inferred.${c.sliderId==='infGrid'?'grid':c.sliderId==='infOut'?'outPct':c.sliderId==='infPue'?'pue':'util'}=+this.value;">
-        <span class="infer-slider-lbl" aria-hidden="true">override</span>
-      </div>` : ''}
-    </div>
-  `;}).join('');
-}
-
 function showCalc() {
   // push inferred values into calculator controls
-  document.getElementById('inferScreen').style.display = 'none';
+  document.getElementById('wizard').style.display = 'none';
+  document.getElementById('intro').style.display = 'none';
   document.getElementById('calcScreen').style.display = 'block';
   document.querySelectorAll('.surveyed').forEach(s => s.textContent = 'from survey');
 
@@ -1282,15 +1216,24 @@ function showCalc() {
   // gpu
   document.getElementById('gpu').value = inferred.gpu;
 
+  // reasons → tooltips on the matching controls
+  setTip('tip-model', inferred.reasons.model);
+  setTip('tip-out',   inferred.reasons.outPct);
+  setTip('tip-grid',  inferred.reasons.grid);
+  setTip('tip-pue',   inferred.reasons.pue);
+  setTip('tip-util',  inferred.reasons.util);
+  setTip('tip-gpu',   inferred.reasons.gpu);
+
   onToolChange();          // reveal the right model sub-dropdown (also recalcs)
   updateGridHighlight();
   recalc();
+  collectBaseline(false);  // survey path
 }
 
 function retakeSurvey() {
   currentStep = 0;
+  clearTips();
   document.getElementById('calcScreen').style.display    = 'none';
-  document.getElementById('inferScreen').style.display   = 'none';
   document.getElementById('wizard').style.display        = 'flex';
   renderStep(0);
 }
