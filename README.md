@@ -118,6 +118,75 @@ The confidence bars in the tool reflect these levels explicitly. Treat results a
 
 ---
 
+## Data collection
+
+If the owner has configured a collection endpoint (see below), the tool sends **one anonymous record per completed run** to a private Google Sheet, to understand how people use AI and improve the tool. Collection is **opt-out**: a checkbox on the intro screen (ticked by default) controls it, and the choice is remembered in your browser. Unticking it means nothing is ever sent.
+
+**What is collected** (one row per visit, upserted by a random per-visit session id):
+
+| Field | Meaning |
+|---|---|
+| `sessionId` | Random per-visit id (dedup only — not identity, not stored elsewhere) |
+| `serverTime` / `clientTime` | When the record was received / created |
+| `quickRun` | `true` if the "See average results" demo was used instead of the survey |
+| `ai_tool`, `hardware`, `output_ratio`, `task_type`, `interactive`, `frequency` | The raw survey answers (null on a quick-run) |
+| `tokens`, `model`, `gpu`, `util`, `pue`, `grid` | The inferred/baseline parameters |
+| `carbonKg` | Resulting monthly kg CO₂ at the baseline |
+| `explored`, `editCount` | Whether (and how often) the user tweaked parameters afterward |
+
+The record is **frozen at the moment results first render** — the honest "usage" snapshot. Tweaking sliders afterward is treated as *exploration*: it only flips `explored`/`editCount`, never the baseline values.
+
+**Privacy posture:** no names, emails, IP-linked identifiers, or free text are collected; only the structured fields above. The session id is random and exists solely to keep one row per visit.
+
+### Enabling collection (owner setup)
+
+The app is static (GitHub Pages), so it posts to an externally-hosted **Google Apps Script Web App** that appends/updates rows in a Sheet. Free tier (quota-limited, never billed). Setup:
+
+1. Create a Google Sheet → **Extensions → Apps Script**; paste the `Code.gs` below.
+2. **Deploy → New deployment → Web app**; "Execute as: **Me**"; "Who has access: **Anyone**".
+3. Copy the **Web app URL** into the `COLLECT_URL` constant in `index.html` (currently empty = collection disabled / silent no-op).
+4. *(Optional)* set a `SECRET` in the script and add `secret:'…'` to the client payload to deter junk POSTs.
+
+```js
+// Code.gs — paste into Extensions → Apps Script, then Deploy → Web app.
+const SHEET_NAME = 'responses';
+const SECRET = '';   // optional: set a shared secret and send it in the client payload
+
+function doPost(e){
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const data = JSON.parse(e.postData.contents);
+    if (SECRET && data.secret !== SECRET) return ContentService.createTextOutput('forbidden');
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+    const headers = ['sessionId','serverTime','clientTime','quickRun','ai_tool','hardware',
+      'output_ratio','task_type','interactive','frequency','tokens','model','gpu','util',
+      'pue','grid','carbonKg','explored','editCount'];
+    if (sheet.getLastRow() === 0) sheet.appendRow(headers);
+    const row = headers.map(h => {
+      if (h === 'serverTime') return new Date();
+      const v = data[h];
+      return Array.isArray(v) ? v.join('|') : (v === undefined || v === null ? '' : v);
+    });
+    const n = Math.max(sheet.getLastRow() - 1, 0);
+    const ids = n ? sheet.getRange(2, 1, n, 1).getValues().flat() : [];
+    const idx = ids.indexOf(data.sessionId);
+    if (idx >= 0) sheet.getRange(idx + 2, 1, 1, headers.length).setValues([row]);  // upsert
+    else sheet.appendRow(row);
+    return ContentService.createTextOutput('ok');
+  } catch (err) {
+    return ContentService.createTextOutput('error');
+  } finally {
+    lock.releaseLock();
+  }
+}
+```
+
+**Trade-offs to know:** the Web App URL is public (anyone viewing source can see it and POST to it — the optional `SECRET` mitigates abuse); sends are fire-and-forget via `sendBeacon`/`no-cors` `fetch`, so the browser gets **no delivery confirmation**; and free-tier Apps Script quotas (not bills) are the only ceiling.
+
+---
+
 ## Contributing
 
 Corrections, better energy-per-token measurements, and additional model support are all welcome. If you have access to more precise per-model inference energy data — especially for proprietary models — please open an issue or PR.
