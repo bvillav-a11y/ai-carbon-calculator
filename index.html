@@ -92,6 +92,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
   border-radius:20px; padding:5px 12px; font-size:13px; font-family:inherit; cursor:pointer;
 }
 .theme-toggle:hover{ border-color:var(--muted); }
+.consent{display:flex;gap:8px;align-items:flex-start;margin-top:22px;
+  font-size:12px;color:var(--muted);line-height:1.5;cursor:pointer;}
+.consent input{margin-top:2px;accent-color:var(--green);}
 .intro-title {
   font-size:26px;font-weight:700;line-height:1.25;margin-bottom:22px;
 }
@@ -474,6 +477,11 @@ input[type=number]{font-family:var(--mono);}
     <div class="intro-default-vals">Claude Sonnet · 5M tokens/mo · US grid · A100 · 60% utilisation · PUE 1.4</div>
     <button class="btn btn-redo" onclick="runDefaults()" type="button">See average results →</button>
   </div>
+
+  <label class="consent" for="consentChk">
+    <input type="checkbox" id="consentChk" checked>
+    <span>📊 Share my anonymous responses to help improve this tool. Uncheck to keep yours private.</span>
+  </label>
 </div>
 </main>
 
@@ -768,6 +776,16 @@ function toggleTheme(){
   let saved = null; try { saved = localStorage.getItem('theme'); } catch(e) {}
   const sys = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
   applyTheme(saved || sys);
+})();
+
+// ── Collection consent: opt-out, remembered in localStorage ──
+function hasConsent(){ const c = document.getElementById('consentChk'); return c ? c.checked : false; }
+(function initConsent(){
+  let v = null; try { v = localStorage.getItem('collectConsent'); } catch(e) {}
+  const chk = document.getElementById('consentChk');
+  if (!chk) return;
+  chk.checked = (v === null) ? true : (v === '1');
+  chk.addEventListener('change', () => { try { localStorage.setItem('collectConsent', chk.checked ? '1' : '0'); } catch(e) {} });
 })();
 
 // ═══════════════════════════════════════════════════════════
