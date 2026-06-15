@@ -362,7 +362,7 @@ input[type=number]{font-family:var(--mono);}
 .rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
 .rcell{background:var(--surface2);border:1px solid var(--border);border-radius:7px;
   padding:12px 8px;text-align:center;}
-.rnum{font-family:var(--mono);font-size:20px;font-weight:700;line-height:1;margin-bottom:3px;}
+.rnum{font-family:var(--mono);font-size:20px;font-weight:700;line-height:1;margin-bottom:3px;color:var(--text);}
 .runit{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
 .rlbl{font-size:12px;color:var(--muted);}
 .cg{color:var(--green);}.ca{color:var(--amber);}.cb{color:var(--blue);}.cr{color:var(--red);}
@@ -734,15 +734,15 @@ input[type=number]{font-family:var(--mono);}
       <div class="clabel">Results — this month</div>
 
       <div class="rgrid" id="resultsLive" aria-live="polite" aria-atomic="true">
-        <div class="rcell"><div class="rnum cg" id="r-co2" aria-label="Total kilograms of CO2">—</div><div class="runit">kg CO₂</div><div class="rlbl">total</div></div>
-        <div class="rcell"><div class="rnum ca" id="r-km" aria-label="Equivalent kilometers driven by car">—</div><div class="runit">km driven</div><div class="rlbl">car equiv.</div></div>
-        <div class="rcell"><div class="rnum cb" id="r-trees" aria-label="Trees per year to offset">—</div><div class="runit">trees/yr</div><div class="rlbl">to offset</div></div>
-        <div class="rcell"><div class="rnum cr" id="r-cost" aria-label="Cost in US dollars at $50 per tonne carbon">—</div><div class="runit">USD</div><div class="rlbl">@ $50/t CO₂</div></div>
+        <div class="rcell"><div class="rnum" id="r-co2" aria-label="Total kilograms of CO2">—</div><div class="runit">kg CO₂</div><div class="rlbl">total</div></div>
+        <div class="rcell"><div class="rnum" id="r-km" aria-label="Equivalent kilometers driven by car">—</div><div class="runit">km driven</div><div class="rlbl">car equiv.</div></div>
+        <div class="rcell"><div class="rnum" id="r-trees" aria-label="Trees per year to offset">—</div><div class="runit">trees/yr</div><div class="rlbl">to offset</div></div>
+        <div class="rcell"><div class="rnum" id="r-cost" aria-label="Cost in US dollars at $50 per tonne carbon">—</div><div class="runit">USD</div><div class="rlbl">@ $50/t CO₂</div></div>
       </div>
 
       <div class="pertok-row">
         <span style="font-size:13px;color:var(--muted)">g CO₂ per token</span>
-        <span class="rnum cg" id="r-pertok" style="font-size:17px" aria-label="Grams of CO2 per token">—</span>
+        <span class="rnum" id="r-pertok" style="font-size:17px" aria-label="Grams of CO2 per token">—</span>
       </div>
 
       <div class="disclosure" role="note">
@@ -1417,11 +1417,27 @@ function fmtPerTok(g) {
   return (g * 1e6).toFixed(1) + ' µg / token';
 }
 
+// Headline impact tiers (kg CO₂/month). Tunable — calibrate against typical results.
+const IMPACT_THRESHOLDS = { low: 2, high: 10 };
+function impactColor(kg){
+  if (kg < IMPACT_THRESHOLDS.low)  return 'var(--green)';
+  if (kg <= IMPACT_THRESHOLDS.high) return 'var(--amber)';
+  return 'var(--red)';
+}
+function impactLabel(kg){
+  if (kg < IMPACT_THRESHOLDS.low)  return 'low impact';
+  if (kg <= IMPACT_THRESHOLDS.high) return 'medium impact';
+  return 'high impact';
+}
+
 function recalc() {
   const p = getCalcInputs();
   const r = computeCarbon(p, p.modelId, p.tokens);
 
   document.getElementById('r-co2').textContent   = fmt(r.totalKg, 3);
+  document.getElementById('r-co2').style.color   = impactColor(r.totalKg);
+  document.getElementById('r-co2').setAttribute('aria-label',
+    'Total ' + fmt(r.totalKg,3) + ' kilograms of CO2, ' + impactLabel(r.totalKg));
   document.getElementById('r-km').textContent    = fmt(r.totalKg * KM_PER_KG, 0);
   document.getElementById('r-trees').textContent = fmt(r.totalKg / TREE_KG_YR, 2);
   document.getElementById('r-cost').textContent  = '$' + fmt((r.totalKg/1000)*CARB_PRICE, 2);
