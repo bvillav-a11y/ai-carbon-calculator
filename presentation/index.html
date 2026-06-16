@@ -86,19 +86,85 @@ html,body{background:var(--bg);}
 <body>
 <div class="reveal"><div class="slides">
 
-  <section data-state="probe-title">
+  <!-- 1 · TITLE -->
+  <section>
     <div class="divider">
-      <span class="pill">probe</span>
-      <h1>Theme probe</h1>
-      <p class="muted">If this is Space Grotesk on near-black with a green pill, the theme + fonts load.</p>
+      <span class="pill">AI Carbon Calculator</span>
+      <h1>What does your AI use<br>cost the planet?</h1>
+      <p class="muted">The logic, the bases, and the deployment of a footprint estimator.</p>
+      <p class="cap">Bianca Villavicencio · TELUS Digital · 2026-06-16</p>
     </div>
+    <aside class="notes">Title. One line: "This is a tour of a small tool that estimates the monthly carbon footprint of personal AI use — and more interestingly, the reasoning and the deployment story behind it." Set the frame: three parts — the choices, the bases (the math + data), and getting it live on gizmos. ~30s.</aside>
   </section>
 
+  <!-- 2 · THE QUESTION -->
   <section>
-    <div class="sec-label">probe · speaker view</div>
-    <h2>Press <code>S</code> for speaker view</h2>
-    <p>You should see notes, a timer, and a next-slide preview in a popup window.</p>
-    <aside class="notes">If you can read this in the speaker window, the notes plugin works. Allow popups for file URLs.</aside>
+    <div class="sec-label">the problem</div>
+    <h2>Nobody actually knows their number</h2>
+    <ul>
+      <li>Providers don't disclose per-query energy, water, or training amortisation.</li>
+      <li>"AI is bad for the environment" is a vibe, not a number you can act on.</li>
+      <li>Goal: a <strong>defensible estimate</strong> from inputs a normal person can answer — and show the working.</li>
+    </ul>
+    <p class="cap">Live: ai-carbon-footprint.telus.gizmos.run · public mirror: bvillav-a11y.github.io/ai-carbon-calculator</p>
+    <aside class="notes">The motivation. Emphasise the gap: people feel guilty or dismissive, neither is grounded. The bar we set ourselves: defensible, transparent, and driven by answers a non-expert can give. Mention it's live on gizmos internally and mirrored on GitHub Pages. ~45s.</aside>
+  </section>
+
+  <!-- DIVIDER · PILLAR I -->
+  <section>
+    <div class="divider"><span class="pill">Pillar I</span><h2>The logic of the choices</h2></div>
+    <aside class="notes">Transition. "First, the product reasoning — why the tool is shaped the way it is." ~10s.</aside>
+  </section>
+
+  <!-- 3 · MENTAL MODEL -->
+  <section>
+    <div class="sec-label">the mental model</div>
+    <h2>One pipeline, four stages</h2>
+    <div class="flow">
+      <span class="node">survey answers</span><span class="arrow">→</span>
+      <span class="node">inferred parameters</span><span class="arrow">→</span>
+      <span class="node">carbon math</span><span class="arrow">→</span>
+      <span class="node">tangible equivalents</span>
+    </div>
+    <p class="small muted" style="margin-top:22px">Everything downstream is a pure function of the inferred parameters, so any value can be overridden and the whole chain re-renders live.</p>
+    <aside class="notes">This is the spine of the whole app — keep coming back to it. Plain-language answers become physical parameters; parameters feed one math function; the kg result is translated into things people feel. The key engineering property: it's a one-way pure pipeline, so "what-if" is free — change an input, everything recomputes. ~50s.</aside>
+  </section>
+
+  <!-- 4 · WHY A SURVEY -->
+  <section>
+    <div class="sec-label">choice · inputs</div>
+    <h2>A survey, not a parameter form</h2>
+    <div class="cards two">
+      <div class="card"><div class="ckey">you ask</div>"How complex are your tasks?"<br>"Cloud or on-prem?"<br>"Interactive or batch?"</div>
+      <div class="card"><div class="ckey">you infer</div>task complexity → <strong>model tier</strong><br>hardware type → <strong>PUE</strong><br>interactivity + frequency → <strong>utilisation</strong></div>
+    </div>
+    <p class="small muted" style="margin-top:16px">Nobody knows their PUE. Everybody knows whether they run batch jobs or chat.</p>
+    <aside class="notes">The core product bet: meet people where they are. Asking for PUE or utilisation directly would lose everyone. So we map answerable questions onto the physical parameters. Note the deliberate decoupling: task complexity drives the model tier; interactivity feeds utilisation, NOT the tier. Each inference also stores a reason string, surfaced as a tooltip on the matching control. ~55s.</aside>
+  </section>
+
+  <!-- 5 · OUTCOME-FIRST UX -->
+  <section>
+    <div class="sec-label">choice · layout</div>
+    <h2>Outcome first, knobs last</h2>
+    <ul>
+      <li><strong>Results</strong> — the number + tangible equivalents, immediately.</li>
+      <li><strong>Insights &amp; actions</strong> — right-size your model, cleaner grid, concrete cuts.</li>
+      <li><strong>More information</strong> — parameters, calculation trace, confidence, sources — all collapsed.</li>
+    </ul>
+    <p class="small muted" style="margin-top:16px">Most people want the answer and what to do about it. Experts can open every knob.</p>
+    <aside class="notes">Progressive disclosure. The old design led with a parameter form; we flipped it. Land on the outcome, then "here's what you can do," then — for the curious — the full machinery behind four collapsibles under a "More information" header. This is also where engagement telemetry lives: we record which of those menus people actually open. ~50s.</aside>
+  </section>
+
+  <!-- 6 · CREDIBILITY BY DESIGN -->
+  <section>
+    <div class="sec-label">choice · trust</div>
+    <h2>Credibility is a feature</h2>
+    <div class="cards two">
+      <div class="card"><div class="ckey">every assumption</div>editable <em>and</em> sourced — with a confidence bar per factor.</div>
+      <div class="card"><div class="ckey">honest by default</div>"This is probably an underestimate" — we say what's excluded.</div>
+    </div>
+    <p class="small muted" style="margin-top:16px">Reserved impact-colour (neutral scenario tiers) · WCAG 2.1 AA · ARIA radio-groups + live regions.</p>
+    <aside class="notes">For a sceptical technical audience, trust is the product. Three moves: (1) every number is both editable and cited, with an explicit confidence level; (2) we proactively state the estimate is conservative and list what's left out; (3) accessibility is maintained, not bolted on — ARIA patterns, keyboard nav, AA contrast (several palette colours were lifted specifically to pass AA). ~55s.</aside>
   </section>
 
 </div></div>
