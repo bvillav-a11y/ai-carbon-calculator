@@ -447,6 +447,11 @@ input[type=number]{font-family:var(--mono);}
 .tog:hover,.tog:focus-visible{border-color:var(--green);color:var(--green);}
 .adv{display:none;margin-top:10px;}
 .adv.open{display:block;}
+/* "More information" button row */
+.more-h{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.08em;margin:18px 0 10px;text-align:center;}
+.more-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.more-btns .tog{margin-top:0;}
 .subdiv{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;
   letter-spacing:.1em;margin:8px 0 6px;}
 
@@ -575,10 +580,27 @@ input[type=number]{font-family:var(--mono);}
     <div id="insights" aria-live="polite"></div>
   </div>
 
-  <!-- ADJUST PARAMETERS (collapsed by default) -->
+  <!-- SCENARIO COMPARISON (stays visible) -->
+  <div class="card full">
+    <div class="clabel">Scenario comparison — same token volume, different models</div>
+    <div class="cmp-grid" id="cmpGrid">…</div>
+    <div class="hint" style="margin-top:8px">Recalculated live using your current hardware and grid settings.</div>
+  </div>
+
+  <!-- MORE INFORMATION — four collapsible panels behind one button row -->
   <div class="full">
-    <button class="tog" onclick="toggleParams()" type="button"
-            aria-expanded="false" aria-controls="paramsSec" id="paramsTog">⚙ Adjust parameters</button>
+    <div class="more-h">More information</div>
+    <div class="more-btns">
+      <button class="tog" onclick="toggleParams()" type="button"
+              aria-expanded="false" aria-controls="paramsSec" id="paramsTog">⚙ Explore parameters</button>
+      <button class="tog" onclick="toggleTrace()" type="button"
+              aria-expanded="false" aria-controls="traceSec" id="traceTog">▸ Calculation trace</button>
+      <button class="tog" onclick="toggleConf()" type="button"
+              aria-expanded="false" aria-controls="confSec" id="confTog">▸ Estimate confidence</button>
+      <button class="tog" onclick="toggleAssump()" type="button"
+              aria-expanded="false" aria-controls="assumpSec" id="assumpTog">▸ Assumptions &amp; sources</button>
+    </div>
+
     <div class="adv" id="paramsSec" role="region" aria-labelledby="paramsTog">
 
       <div class="card" style="margin-top:10px">
@@ -732,38 +754,28 @@ input[type=number]{font-family:var(--mono);}
       </div>
 
     </div>
-  </div>
 
-  <!-- SCENARIO COMPARISON -->
-  <div class="card full">
-    <div class="clabel">Scenario comparison — same token volume, different models</div>
-    <div class="cmp-grid" id="cmpGrid">…</div>
-    <div class="hint" style="margin-top:8px">Recalculated live using your current hardware and grid settings.</div>
-  </div>
-
-  <!-- CALCULATION TRACE (collapsed by default) -->
-  <div class="full">
-    <button class="tog" onclick="toggleTrace()" type="button"
-            aria-expanded="false" aria-controls="traceSec" id="traceTog">▸ Show calculation trace</button>
     <div class="adv" id="traceSec" role="region" aria-labelledby="traceTog">
       <div class="eqbox" id="eqbox" aria-live="polite">…</div>
     </div>
-  </div>
 
-  <!-- CONFIDENCE + ASSUMPTIONS -->
-  <div class="card">
-    <div class="clabel">Estimate confidence</div>
-    <div id="confBars"></div>
-  </div>
+    <div class="adv" id="confSec" role="region" aria-labelledby="confTog">
+      <div class="card" style="margin-top:10px">
+        <div class="clabel">Estimate confidence</div>
+        <div id="confBars"></div>
+      </div>
+    </div>
 
-  <div class="card">
-    <div class="clabel">Assumptions &amp; sources</div>
-    <table class="atbl">
-      <thead><tr><th>Factor</th><th>Value</th><th>Contribution</th><th>Source</th><th>Unc.</th></tr></thead>
-      <tbody id="aBody"></tbody>
-    </table>
+    <div class="adv" id="assumpSec" role="region" aria-labelledby="assumpTog">
+      <div class="card" style="margin-top:10px">
+        <div class="clabel">Assumptions &amp; sources</div>
+        <table class="atbl">
+          <thead><tr><th>Factor</th><th>Value</th><th>Contribution</th><th>Source</th><th>Unc.</th></tr></thead>
+          <tbody id="aBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
-
 </div><!-- /wrap -->
 </div><!-- /calcScreen -->
 
@@ -1625,7 +1637,7 @@ function toggleParams() {
   const btn = document.getElementById('paramsTog');
   const open = !s.classList.contains('open');
   s.classList.toggle('open', open);
-  btn.textContent = open ? '⚙ Hide parameters' : '⚙ Adjust parameters';
+  btn.textContent = open ? '⚙ Hide parameters' : '⚙ Explore parameters';
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   if (open) markEngagement('openedParams');
 }
@@ -1635,9 +1647,29 @@ function toggleTrace() {
   const btn = document.getElementById('traceTog');
   const open = !s.classList.contains('open');
   s.classList.toggle('open', open);
-  btn.textContent = open ? '▾ Hide calculation trace' : '▸ Show calculation trace';
+  btn.textContent = open ? '▾ Hide calculation trace' : '▸ Calculation trace';
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   if (open) markEngagement('openedTrace');
+}
+
+function toggleConf() {
+  const s = document.getElementById('confSec');
+  const btn = document.getElementById('confTog');
+  const open = !s.classList.contains('open');
+  s.classList.toggle('open', open);
+  btn.textContent = open ? '▾ Hide estimate confidence' : '▸ Estimate confidence';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) markEngagement('openedConfidence');
+}
+
+function toggleAssump() {
+  const s = document.getElementById('assumpSec');
+  const btn = document.getElementById('assumpTog');
+  const open = !s.classList.contains('open');
+  s.classList.toggle('open', open);
+  btn.textContent = open ? '▾ Hide assumptions & sources' : '▸ Assumptions & sources';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) markEngagement('openedAssumptions');
 }
 
 function pickLocRow(tr) {
@@ -1828,6 +1860,8 @@ function collectBaseline(quickRun){
     openedParams:   false,
     openedTrace:    false,
     openedAdvanced: false,
+    openedConfidence: false,
+    openedAssumptions: false,
     clickedShare:   false,
     retookSurvey:   false,
     clientTime:   new Date().toISOString(),
