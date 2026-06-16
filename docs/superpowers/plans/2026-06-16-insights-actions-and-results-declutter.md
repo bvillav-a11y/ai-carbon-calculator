@@ -475,6 +475,151 @@ git add CLAUDE.md && git commit -m "Document insights card + outcome-first resul
 
 ---
 
+## Task 7: Engagement telemetry — worker schema + migration
+
+**Files:** Modify `scripts/worker.template.ts` (`COLS`, `ensureTable`, `collect`). Do **not** hand-edit `gizmos-app/src/index.ts` (it's generated).
+
+- [ ] **Step 1: Extend `COLS`.** Replace the `COLS` array with (six fields appended, order matters — params below must match):
+
+```js
+const COLS = [
+  "session_id", "server_time", "client_time", "quick_run", "ai_tool",
+  "hardware", "output_ratio", "task_type", "interactive", "frequency",
+  "tokens", "model", "gpu", "util", "pue", "grid", "carbon_kg",
+  "explored", "edit_count",
+  "dwell_ms", "opened_params", "opened_trace", "opened_advanced",
+  "clicked_share", "retook_survey",
+];
+```
+
+- [ ] **Step 2: Update `ensureTable` — full schema + one-time ALTER migration.** Replace the whole `ensureTable` function with:
+
+```js
+let _schemaReady = false;
+async function ensureTable(db) {
+  await db.exec(
+    "CREATE TABLE IF NOT EXISTS responses (" +
+    "session_id TEXT PRIMARY KEY, server_time TEXT NOT NULL, client_time TEXT, " +
+    "quick_run INTEGER, ai_tool TEXT, hardware INTEGER, output_ratio INTEGER, " +
+    "task_type INTEGER, interactive INTEGER, frequency INTEGER, tokens INTEGER, " +
+    "model TEXT, gpu TEXT, util INTEGER, pue REAL, grid INTEGER, carbon_kg REAL, " +
+    "explored INTEGER, edit_count INTEGER, dwell_ms INTEGER, opened_params INTEGER, " +
+    "opened_trace INTEGER, opened_advanced INTEGER, clicked_share INTEGER, retook_survey INTEGER)"
+  );
+  // The prod table predates the telemetry columns; CREATE IF NOT EXISTS won't add
+  // them, so best-effort ALTER each (SQLite throws on an existing column — ignore).
+  // Once per worker instance.
+  if (_schemaReady) return;
+  const adds = ["dwell_ms INTEGER", "opened_params INTEGER", "opened_trace INTEGER",
+    "opened_advanced INTEGER", "clicked_share INTEGER", "retook_survey INTEGER"];
+  for (let i = 0; i < adds.length; i++) {
+    try { await db.exec("ALTER TABLE responses ADD COLUMN " + adds[i]); } catch (e) { /* exists */ }
+  }
+  _schemaReady = true;
+}
+```
+
+- [ ] **Step 3: Extend the insert params in `collect`.** In `collect(req, env)`, replace the `params` array with (six values appended, matching `COLS` order):
+
+```js
+  const params = [
+    sid, new Date().toISOString(), d.clientTime ?? null, d.quickRun ? 1 : 0, aiTool,
+    d.hardware ?? null, d.output_ratio ?? null, d.task_type ?? null, d.interactive ?? null,
+    d.frequency ?? null, d.tokens ?? null, d.model ?? null, d.gpu ?? null, d.util ?? null,
+    d.pue ?? null, d.grid ?? null, d.carbonKg ?? null, d.explored ? 1 : 0, d.editCount ?? 0,
+    d.dwellMs ?? null, d.openedParams ? 1 : 0, d.openedTrace ? 1 : 0, d.openedAdvanced ? 1 : 0,
+    d.clickedShare ? 1 : 0, d.retookSurvey ? 1 : 0,
+  ];
+```
+
+- [ ] **Step 4: Syntax check the worker.** `node scripts/embed.mjs >/dev/null && cp gizmos-app/src/index.ts /tmp/w.mjs && node --check /tmp/w.mjs && echo OK`. Expected: `OK`.
+- [ ] **Step 5: Commit.**
+```bash
+git add scripts/worker.template.ts gizmos-app/src/index.ts && git commit -m "Telemetry: add engagement columns + ALTER migration to worker"
+```
+
+---
+
+## Task 8: Engagement telemetry — client instrumentation
+
+**Files:** Modify `index.html` (collection module ~`collectBaseline`/`markExplored`/`pagehide`, plus `toggleParams`/`toggleTrace`/`toggleAdv`, `shareResults`, `retakeSurvey`).
+
+- [ ] **Step 1: Init telemetry fields + startTs in `collectBaseline`.** In the `_collect.payload = { … }` object literal, add these keys (after `editCount: 0,`):
+
+```js
+    dwellMs:        null,
+    openedParams:   false,
+    openedTrace:    false,
+    openedAdvanced: false,
+    clickedShare:   false,
+    retookSurvey:   false,
+```
+
+And immediately after `_collect.sent = true;` (before `sendCollect(...)`), add:
+
+```js
+  _collect.startTs = Date.now();
+```
+
+- [ ] **Step 2: Add `markEngagement` + an always-fire finaliser; replace the `pagehide` line.** Find the `markExplored` function and the `window.addEventListener('pagehide', …)` line. Leave `markExplored` as-is; **replace** the single `pagehide` listener line with:
+
+```js
+function markEngagement(key){
+  if (!_collect.sent || !COLLECT_URL || !hasConsent() || !_collect.payload) return;
+  _collect.payload[key] = true;
+  clearTimeout(_exploreTimer);
+  _exploreTimer = setTimeout(function(){ sendCollect(_collect.payload); }, 2000);
+}
+function _finalizeCollect(){
+  if (!_collect.sent || !COLLECT_URL || !hasConsent() || !_collect.payload) return;
+  _collect.payload.dwellMs = Date.now() - (_collect.startTs || Date.now());
+  sendCollect(_collect.payload);
+}
+window.addEventListener('pagehide', _finalizeCollect);
+window.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') _finalizeCollect(); });
+```
+
+- [ ] **Step 3: Instrument the expanders.** In `toggleParams`, `toggleTrace`, and `toggleAdv`, add inside the `open` branch (only when opening). Each already computes `const open = !s.classList.contains('open');`. After `btn.setAttribute('aria-expanded', …)` add:
+  - `toggleParams`: `if (open) markEngagement('openedParams');`
+  - `toggleTrace`: `if (open) markEngagement('openedTrace');`
+  - `toggleAdv`: `if (open) markEngagement('openedAdvanced');`
+
+- [ ] **Step 4: Instrument share + retake.** In `shareResults()` add at the top of the function body: `markEngagement('clickedShare');`. In `retakeSurvey()` add at the top: `markEngagement('retookSurvey');` (before navigating away — `markEngagement` schedules a debounced send and the value also rides the `pagehide` finaliser).
+
+- [ ] **Step 5: Syntax check.** `awk … node --check`. Expected: no output.
+- [ ] **Step 6: Manual check.** `open index.html`, "See average results". In console, after expanding params/trace and clicking share, `_collect.payload` shows `openedParams/openedTrace/clickedShare = true`. (`dwellMs` is set only on tab-hide.) No errors.
+- [ ] **Step 7: Commit.**
+```bash
+git add index.html && git commit -m "Telemetry: client dwell timer + expansion/share/retake flags"
+```
+
+---
+
+## Task 9: Re-embed, redeploy to Gizmos, verify telemetry end-to-end
+
+**Files:** regenerate `gizmos-app/src/index.ts`; deploy.
+
+- [ ] **Step 1: Regenerate embed + syntax.**
+```bash
+node scripts/embed.mjs && cp gizmos-app/src/index.ts /tmp/w.mjs && node --check /tmp/w.mjs && echo OK
+```
+Expected: embed message + `OK`.
+
+- [ ] **Step 2: Deploy.**
+```bash
+GIZMOS_API_KEY=gzm_… gizmos push --org telus --app ai-carbon-footprint gizmos-app
+```
+Expected: `Deployed! Live at: https://ai-carbon-footprint.telus.gizmos.run`. (Use a fresh key if rotated.)
+
+- [ ] **Step 3: Verify on the live app (SSO browser).** Open the app → "See average results" → expand "Adjust parameters" and "Calculation trace", click "Share results" → wait a moment, then **leave/close the tab** (fires the dwell finaliser) → reopen and visit `/export`. The row should show `opened_params=1`, `opened_trace=1`, `clicked_share=1`, and a non-empty `dwell_ms`.
+- [ ] **Step 4: Confirm via logs if needed.** `gizmos logs ai-carbon-footprint --org telus --since 10m | grep collect` → `collect ok …`.
+- [ ] **Step 5: Commit any embed delta** (if not already committed in Task 8's chain):
+```bash
+git add gizmos-app/src/index.ts && git commit -m "Regenerate embed with telemetry" || echo "nothing to commit"
+```
+
+---
+
 ## Self-review (against the spec)
 
 **Spec coverage:**
@@ -487,6 +632,11 @@ git add CLAUDE.md && git commit -m "Document insights card + outcome-first resul
 - Header copy — Task 5. ✓
 - gizmos embed regen — Task 5. ✓
 - Docs — Task 6. ✓
+- C. Telemetry — 6 columns + ALTER migration (Task 7), client dwell + flags + always-fire finaliser (Task 8), redeploy + live verify (Task 9). ✓
+- Dwell = results-page (startTs at baseline → finaliser) — Task 8. ✓
+- opened_params/trace/advanced wired into the expand branch — Task 8 Step 3. ✓
+- clicked_share / retook_survey — Task 8 Step 4. ✓
+- Schema migration for the existing prod table (ALTER, once per instance) — Task 7 Step 2. ✓
 
 **Placeholder scan:** none — all steps have complete code/commands. The `…` inside `#cmpGrid`/`#eqbox` are the existing placeholder glyphs the render functions overwrite (not plan gaps).
 

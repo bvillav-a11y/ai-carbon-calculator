@@ -5,10 +5,11 @@
 
 ## Overview
 
-Two related changes to the results screen (`#calcScreen`), for the person who wants to *act* on their footprint:
+Three related changes to the results screen (`#calcScreen`), for the person who wants to *act* on their footprint:
 
 - **A. New "Insights & actions" card** — a hybrid of personalized insights (lead) + a short static checklist. The lead insight right-sizes the model to the user's real need; a second personalizes the electricity grid.
 - **B. Declutter via progressive disclosure** — reorder to outcome-first and hide detail behind expanders: the editable parameter cards collapse into one "⚙ Adjust parameters" section (collapsed by default), and the "Calculation trace" collapses too.
+- **C. Engagement telemetry** — extend the collection record with results-page dwell time and booleans for which menus were expanded + whether Share / Retake were used.
 
 Both stay inside `index.html` (calculator source of truth) and flow through `recalc()` so they update live. No new constant tables.
 
@@ -70,6 +71,35 @@ Generalize the existing `toggleAdv()`/`#advSec` pattern into two new toggles, re
 - Shareable-link recipients (`applyHashState`) land on the same restructured screen; collapsed by default is fine.
 
 ---
+
+## Part C — engagement telemetry
+
+Extends the existing collection record (consent-gated, upsert-by-`sessionId`, `pagehide`-finalised) with six engagement fields — no new infrastructure.
+
+### New fields (same `responses` row)
+| Column (D1) | Client key | Type | Meaning |
+|---|---|---|---|
+| `dwell_ms` | `dwellMs` | int | Results-page time: first results render (`collectBaseline`) → tab leave/hide |
+| `opened_params` | `openedParams` | bool→int | Ever expanded "⚙ Adjust parameters" |
+| `opened_trace` | `openedTrace` | bool→int | Ever expanded "Calculation trace" |
+| `opened_advanced` | `openedAdvanced` | bool→int | Ever expanded "embodied carbon settings" |
+| `clicked_share` | `clickedShare` | bool→int | Clicked "🔗 Share results" |
+| `retook_survey` | `retookSurvey` | bool→int | Clicked "Retake survey" |
+
+### Client (`index.html`)
+- `_collect.startTs = Date.now()` stamped when the baseline is set; new flags initialised on the payload (`false`/`0`).
+- A small `markEngagement(key)` helper sets `_collect.payload[key] = true` and schedules the existing debounced send (reuse the `markExplored` debounce timer). Wire it into the **expand branch** of `toggleParams`/`toggleTrace`/`toggleAdv` (only when opening, not collapsing) and into `shareResults()` and `retakeSurvey()`.
+- **`pagehide` finaliser now always fires** (today it only sends if `explored`): set `_collect.payload.dwellMs = Date.now() - _collect.startTs` and send — so dwell + flags land even for a read-only visitor. Guard with `_collect.sent && hasConsent()`.
+
+### Worker (`gizmos-app/src/index.ts` via `worker.template.ts`)
+- Add the six columns to `COLS`, to the `CREATE TABLE`, and to the insert params (booleans coerced to `1`/`0`, `dwellMs` as integer).
+- **Schema migration:** the prod `responses` table already exists, so `CREATE TABLE IF NOT EXISTS` won't add columns. `ensureTable` runs a **one-time-per-instance, best-effort `ALTER TABLE responses ADD COLUMN …`** for each new field (wrapped in try/catch — SQLite errors on an existing column, which is ignored). New tables get the columns from `CREATE`; the existing table gets them from `ALTER`. Gate with a module-level `let _schemaReady = false` so the ALTERs run at most once per worker instance.
+
+### Privacy
+Anonymous engagement signals only (booleans + a duration) — no identity, no free text. Same consent gate as the rest of collection.
+
+### One-row-per-visit note
+`retookSurvey` marks that the visitor retook the survey; the post-retake run does **not** create a second row (baseline stays frozen at first results render — consistent with the existing design).
 
 ## Cross-cutting constraints
 - **Accessibility:** collapsible buttons use `aria-expanded`/`aria-controls`; the Insights card sits in/near an `aria-live="polite"` context so updates are announced; preserve focus rings. Maintain WCAG AA contrast (semantic tokens already AA in both themes).
