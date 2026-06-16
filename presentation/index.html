@@ -167,6 +167,103 @@ html,body{background:var(--bg);}
     <aside class="notes">For a sceptical technical audience, trust is the product. Three moves: (1) every number is both editable and cited, with an explicit confidence level; (2) we proactively state the estimate is conservative and list what's left out; (3) accessibility is maintained, not bolted on — ARIA patterns, keyboard nav, AA contrast (several palette colours were lifted specifically to pass AA). ~55s.</aside>
   </section>
 
+  <!-- DIVIDER · PILLAR II -->
+  <section>
+    <div class="divider"><span class="pill">Pillar II</span><h2>The bases: the math &amp; the data</h2></div>
+    <aside class="notes">Transition into the rigour. "Now the part a technical audience actually wants — what's under the number." ~10s.</aside>
+  </section>
+
+  <!-- 7 · THE CALCULATION CHAIN -->
+  <section>
+    <div class="sec-label">computeCarbon()</div>
+    <h2>The chain, as a ledger</h2>
+    <div class="ledger">
+      <div class="row"><span>raw energy = inTok·in_kWh/kTok + outTok·out_kWh/kTok</span><span class="val">kWh</span></div>
+      <div class="row"><span>÷ utilisation</span><span class="val">kWh</span></div>
+      <div class="row"><span>× PUE</span><span class="val">kWh</span></div>
+      <div class="row"><span>× grid g/kWh</span><span class="val">operational kg</span></div>
+      <div class="row"><span>+ embodied <span class="tag">GPU manufacture, amortised</span></span><span class="val">kg</span></div>
+      <div class="row"><span><strong>= total kg CO₂</strong></span><span class="val">total</span></div>
+    </div>
+    <p class="cap">One pure function. The on-screen "calculation trace" renders exactly these rows.</p>
+    <aside class="notes">Walk each line slowly — this is the meatiest slide. Energy starts per-token, split input vs output. Divide by utilisation (idle GPUs still draw power). Multiply by PUE (data-centre overhead). Multiply by grid intensity to turn kWh into kg. Add amortised embodied carbon. The on-screen ledger in the app mirrors this row for row — the math is never hidden. ~90s; this slide can run long, that's fine.</aside>
+  </section>
+
+  <!-- 8 · ENERGY PER TOKEN -->
+  <section>
+    <div class="sec-label">MODEL_SPECS · kWh per 1k tokens</div>
+    <h2>Output costs ~5× input</h2>
+    <div class="ledger">
+      <div class="row"><span>Claude Haiku</span><span><span class="in-tok">in 0.000090</span> · <span class="out-tok">out 0.000450</span></span></div>
+      <div class="row"><span>Claude Sonnet</span><span><span class="in-tok">in 0.000390</span> · <span class="out-tok">out 0.001950</span></span></div>
+      <div class="row"><span>Claude Opus</span><span><span class="in-tok">in 0.000780</span> · <span class="out-tok">out 0.003900</span></span></div>
+    </div>
+    <p class="small" style="margin-top:14px"><span class="in-tok">■ input</span> — cheap, parallel · <span class="out-tok">■ output</span> — generated one token at a time, ~5× costlier</p>
+    <p class="cap">Source: Epoch AI — "How much energy does ChatGPT use?" (Sonnet ≈ GPT-4o class).</p>
+    <aside class="notes">Two points. First, energy is per-token and asymmetric — output is autoregressive (one token at a time) so it's roughly 5× input; that's why "ask for concise answers" is a real lever. Second, tiers scale ~linearly Haiku→Sonnet→Opus, which is what makes "right-size your model" a genuine carbon decision, not a rounding error. Numbers are grounded in Epoch AI's public estimates. ~60s.</aside>
+  </section>
+
+  <!-- 9 · HARDWARE & OVERHEAD -->
+  <section>
+    <div class="sec-label">GPU_SPECS · PUE · utilisation</div>
+    <h2>Where the watts leak</h2>
+    <div class="cards">
+      <div class="card"><div class="ckey">gpu</div>H100 700W · A100 700→400W · embodied 130–225 kg CO₂ per card</div>
+      <div class="card"><div class="ckey">pue</div>1.2 hyperscaler · 1.4 typical cloud · 2.0+ on-prem — multiplies IT energy by overhead</div>
+      <div class="card"><div class="ckey">utilisation</div>energy per <em>useful</em> token scales as <strong>1 ÷ utilisation</strong> — idle silicon still burns</div>
+    </div>
+    <aside class="notes">Three multipliers people never see. GPU choice sets the power draw and carries embodied carbon. PUE is the tax for cooling and networking — 1.4 means 40% on top. Utilisation is the sneaky one: a half-idle GPU doubles the energy attributed to each real token, which is exactly why interactive use is dirtier per token than batch. ~60s.</aside>
+  </section>
+
+  <!-- 10 · THE GRID -->
+  <section>
+    <div class="sec-label">GRID_MAP · g CO₂ / kWh</div>
+    <h2>The grid often decides it</h2>
+    <div class="ledger">
+      <div class="row"><span>🇨🇦 Canada BC (hydro)</span><span class="val">15</span></div>
+      <div class="row"><span>🇫🇷 France (nuclear)</span><span class="val">60</span></div>
+      <div class="row"><span>🇧🇷 Brazil</span><span class="val">136</span></div>
+      <div class="row"><span>🇺🇸 US average</span><span class="val">400</span></div>
+      <div class="row"><span>🇵🇱 Poland (coal)</span><span class="val">700</span></div>
+    </div>
+    <p class="small muted" style="margin-top:14px">~47× spread, end to end. Insight fires when grid &gt; <code>150</code>: "a cleaner grid (~<code>50</code>) would cut X%."</p>
+    <aside class="notes">The single biggest swing in the whole model. Same tokens, same hardware: a BC-hydro grid versus Polish coal differ by ~47×. So the app's biggest lever isn't the model — it's where the data centre is. That's why one of the personalised insights is grid-based: above 150 g we compute the saving against a ~50 g hydro/nuclear reference. ~55s.</aside>
+  </section>
+
+  <!-- 11 · EMBODIED CARBON -->
+  <section>
+    <div class="sec-label">embodied</div>
+    <h2>The carbon you already spent</h2>
+    <pre><code>embodied_kg = gpuCo2 / (gpuTok · gpuLife · 12) · tokens
+<span class="cmt">// e.g. 150 kg / (50M · 4yr · 12mo) · your tokens</span></code></pre>
+    <p class="small muted">Manufacturing CO₂ amortised over the GPU's lifetime token throughput. Small next to operational — but counted, because honesty.</p>
+    <aside class="notes">Most footprint tools ignore embodied carbon entirely. We amortise the chip's manufacturing emissions across all the tokens it will ever serve, then attribute your slice. It's usually small versus operational energy — but including it is part of being defensible rather than convenient, and it's adjustable in the advanced panel. ~45s.</aside>
+  </section>
+
+  <!-- 12 · KG TO MEANING -->
+  <section>
+    <div class="sec-label">tangible equivalents</div>
+    <h2>From kg to something you feel</h2>
+    <div class="eqgrid">
+      <div><div class="big eq-orange">6 km</div><div class="cap">driven per kg CO₂</div></div>
+      <div><div class="big eq-teal">22 kg</div><div class="cap">absorbed / tree / year</div></div>
+      <div><div class="big eq-pink">$50</div><div class="cap">social cost / tonne</div></div>
+    </div>
+    <p class="small muted" style="margin-top:18px">Each equivalent gets its own accent colour — deliberately distinct from every semantic colour in the math.</p>
+    <aside class="notes">A kilogram of CO₂ is meaningless to most people. So we translate: kilometres driven, trees-years to offset, dollars of social cost. Note the colour discipline — these three accents (orange/teal/pink) are reserved exclusively for equivalents, never reused for a parameter, so the eye learns "this colour = a real-world analogy." ~45s.</aside>
+  </section>
+
+  <!-- 13 · HONESTY ABOUT UNCERTAINTY -->
+  <section>
+    <div class="sec-label">confidence &amp; what's excluded</div>
+    <h2>Say what you don't know</h2>
+    <div class="conf"><div class="lab"><span>Energy per token</span><span>med</span></div><div class="track"><div class="fill" style="width:60%"></div></div></div>
+    <div class="conf"><div class="lab"><span>PUE (inferred, undisclosed)</span><span>low–med</span></div><div class="track"><div class="fill" style="width:55%"></div></div></div>
+    <div class="conf"><div class="lab"><span>Grid intensity</span><span>high</span></div><div class="track"><div class="fill" style="width:80%"></div></div></div>
+    <p class="small muted" style="margin-top:14px">Excluded: training amortisation · networking · cooling water · non-GPU embodied. <code>computeCarbon</code> is one pure function — the scenario tiers just call it with a different model.</p>
+    <aside class="notes">Close the rigour section on humility. Each factor carries a confidence level — grid is well-measured, PUE is inferred and uncertain. We list the big exclusions explicitly so nobody thinks the number is complete. And the engineering punchline: because computeCarbon is a single pure function, the Haiku/Sonnet/Opus scenario comparison is literally the same function called three times — no duplicated math to drift. ~55s.</aside>
+  </section>
+
 </div></div>
 <script src="reveal/dist/reveal.js"></script>
 <script src="reveal/plugin/notes/notes.js"></script>
