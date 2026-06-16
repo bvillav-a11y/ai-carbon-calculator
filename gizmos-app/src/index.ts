@@ -15,6 +15,8 @@ const COLS = [
   "hardware", "output_ratio", "task_type", "interactive", "frequency",
   "tokens", "model", "gpu", "util", "pue", "grid", "carbon_kg",
   "explored", "edit_count",
+  "dwell_ms", "opened_params", "opened_trace", "opened_advanced",
+  "clicked_share", "retook_survey",
 ];
 
 function decodeHtml() {
@@ -28,6 +30,7 @@ function json(obj, status) {
   });
 }
 
+let _schemaReady = false;
 async function ensureTable(db) {
   await db.exec(
     "CREATE TABLE IF NOT EXISTS responses (" +
@@ -35,8 +38,19 @@ async function ensureTable(db) {
     "quick_run INTEGER, ai_tool TEXT, hardware INTEGER, output_ratio INTEGER, " +
     "task_type INTEGER, interactive INTEGER, frequency INTEGER, tokens INTEGER, " +
     "model TEXT, gpu TEXT, util INTEGER, pue REAL, grid INTEGER, carbon_kg REAL, " +
-    "explored INTEGER, edit_count INTEGER)"
+    "explored INTEGER, edit_count INTEGER, dwell_ms INTEGER, opened_params INTEGER, " +
+    "opened_trace INTEGER, opened_advanced INTEGER, clicked_share INTEGER, retook_survey INTEGER)"
   );
+  // The prod table predates the telemetry columns; CREATE IF NOT EXISTS won't add
+  // them, so best-effort ALTER each (SQLite throws on an existing column — ignore).
+  // Once per worker instance.
+  if (_schemaReady) return;
+  const adds = ["dwell_ms INTEGER", "opened_params INTEGER", "opened_trace INTEGER",
+    "opened_advanced INTEGER", "clicked_share INTEGER", "retook_survey INTEGER"];
+  for (let i = 0; i < adds.length; i++) {
+    try { await db.exec("ALTER TABLE responses ADD COLUMN " + adds[i]); } catch (e) { /* exists */ }
+  }
+  _schemaReady = true;
 }
 
 async function collect(req, env) {
@@ -53,6 +67,8 @@ async function collect(req, env) {
     d.hardware ?? null, d.output_ratio ?? null, d.task_type ?? null, d.interactive ?? null,
     d.frequency ?? null, d.tokens ?? null, d.model ?? null, d.gpu ?? null, d.util ?? null,
     d.pue ?? null, d.grid ?? null, d.carbonKg ?? null, d.explored ? 1 : 0, d.editCount ?? 0,
+    d.dwellMs ?? null, d.openedParams ? 1 : 0, d.openedTrace ? 1 : 0, d.openedAdvanced ? 1 : 0,
+    d.clickedShare ? 1 : 0, d.retookSurvey ? 1 : 0,
   ];
   const placeholders = COLS.map(() => "?").join(", ");
   const updates = COLS.filter((col) => col !== "session_id").map((col) => col + "=excluded." + col).join(", ");
