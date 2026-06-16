@@ -1673,10 +1673,12 @@ if (applyHashState()) {
 // only when the user clicks "Start quiz" (see startQuiz()).
 
 // ═══════════════════════════════════════════════════════════
-// SURVEY DATA COLLECTION  (fire-and-forget → Google Apps Script)
-// Paste your deployed Web App URL below to enable. Empty = no-op.
+// SURVEY DATA COLLECTION  (fire-and-forget POST)
+// On Gizmos this is a SAME-ORIGIN path served by the app's own worker
+// (src/index.ts → D1). On the static GitHub Pages mirror the path 404s,
+// so collection silently no-ops there. Set to '' to disable entirely.
 // ═══════════════════════════════════════════════════════════
-const COLLECT_URL = '';   // e.g. 'https://script.google.com/macros/s/AKfy.../exec'
+const COLLECT_URL = '/collect';
 
 const _collect = { sessionId:null, payload:null, sent:false, explored:false, editCount:0 };
 
@@ -1687,14 +1689,15 @@ function _newId(){
 
 function sendCollect(payload){
   if (!COLLECT_URL) return;
+  // Same-origin POST. keepalive lets the exploration update survive page unload.
   try {
-    const body = JSON.stringify(payload);
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(COLLECT_URL, new Blob([body], { type:'text/plain' }));
-    } else {
-      fetch(COLLECT_URL, { method:'POST', mode:'no-cors', headers:{ 'Content-Type':'text/plain' }, body });
-    }
-  } catch(e) { /* best-effort: never disturb the UI */ }
+    fetch(COLLECT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(function(){ /* best-effort: never disturb the UI */ });
+  } catch(e) { /* best-effort */ }
 }
 
 // Snapshot the honest "usage" baseline at first results render.

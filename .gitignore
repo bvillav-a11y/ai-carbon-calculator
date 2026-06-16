@@ -3,5 +3,6 @@
 .superpowers/
 *.log
 node_modules/
+*.zip
 .vscode/
 .idea/

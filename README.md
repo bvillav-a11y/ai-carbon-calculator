@@ -120,70 +120,40 @@ The confidence bars in the tool reflect these levels explicitly. Treat results a
 
 ## Data collection
 
-If the owner has configured a collection endpoint (see below), the tool sends **one anonymous record per completed run** to a private Google Sheet, to understand how people use AI and improve the tool. Collection is **opt-out**: a checkbox on the intro screen (ticked by default) controls it, and the choice is remembered in your browser. Unticking it means nothing is ever sent.
+When the calculator runs on **TELUS Gizmos**, it sends **one anonymous record per completed run** to the app's own database, to understand how people use AI and improve the tool. Collection is **opt-out**: a checkbox on the intro screen (ticked by default) controls it, and the choice is remembered in your browser. Unticking it means nothing is ever sent. On the public GitHub Pages mirror there is no backend, so collection silently does nothing.
 
 **What is collected** (one row per visit, upserted by a random per-visit session id):
 
 | Field | Meaning |
 |---|---|
-| `sessionId` | Random per-visit id (dedup only — not identity, not stored elsewhere) |
-| `serverTime` / `clientTime` | When the record was received / created |
-| `quickRun` | `true` if the "See average results" demo was used instead of the survey |
+| `session_id` | Random per-visit id (dedup only — not identity, not stored elsewhere) |
+| `server_time` / `client_time` | When the record was received / created |
+| `quick_run` | `1` if the "See average results" demo was used instead of the survey |
 | `ai_tool`, `hardware`, `output_ratio`, `task_type`, `interactive`, `frequency` | The raw survey answers (null on a quick-run) |
 | `tokens`, `model`, `gpu`, `util`, `pue`, `grid` | The inferred/baseline parameters |
-| `carbonKg` | Resulting monthly kg CO₂ at the baseline |
-| `explored`, `editCount` | Whether (and how often) the user tweaked parameters afterward |
+| `carbon_kg` | Resulting monthly kg CO₂ at the baseline |
+| `explored`, `edit_count` | Whether (and how often) the user tweaked parameters afterward |
 
-The record is **frozen at the moment results first render** — the honest "usage" snapshot. Tweaking sliders afterward is treated as *exploration*: it only flips `explored`/`editCount`, never the baseline values.
+The record is **frozen at the moment results first render** — the honest "usage" snapshot. Tweaking sliders afterward is treated as *exploration*: it only flips `explored`/`edit_count`, never the baseline values.
 
-**Privacy posture:** no names, emails, IP-linked identifiers, or free text are collected; only the structured fields above. The session id is random and exists solely to keep one row per visit.
+**Privacy posture:** no names, emails, IP-linked identifiers, or free text are collected; only the structured fields above. The session id is random and exists solely to keep one row per visit. Because the Gizmos app is gated behind TELUS SSO, the collection endpoint never needs to authenticate the caller — and the data stays inside TELUS.
 
-### Enabling collection (owner setup)
+### How it works (Gizmos)
 
-The app is static (GitHub Pages), so it posts to an externally-hosted **Google Apps Script Web App** that appends/updates rows in a Sheet. Free tier (quota-limited, never billed). Setup:
+The app deploys as a **single Gizmos app** (the self-contained `gizmos-app/` dir): a plain Workers module serves the calculator at `/` and exposes two same-origin routes backed by the app's **per-app D1** database. Worker logic is authored in `scripts/worker.template.ts`; `scripts/embed.mjs` compiles it + `index.html` into the deploy-only `gizmos-app/src/index.ts` (one self-contained file, no imports — the Gizmos loader resolves neither a bare `hono` import nor relative imports at runtime):
 
-1. Create a Google Sheet → **Extensions → Apps Script**; paste the `Code.gs` below.
-2. **Deploy → New deployment → Web app**; "Execute as: **Me**"; "Who has access: **Anyone**".
-3. Copy the **Web app URL** into the `COLLECT_URL` constant in `index.html` (currently empty = collection disabled / silent no-op).
-4. *(Optional)* set a `SECRET` in the script and add `secret:'…'` to the client payload to deter junk POSTs.
+- **`POST /collect`** — the browser POSTs the JSON payload here via `fetch` (same-origin; `keepalive` lets it survive page unload). The worker upserts it into the `responses` table by `session_id`. Same-origin avoids the cross-origin/cookie problem that killed an earlier Google Apps Script attempt. **The path must not begin with `/api/`** — gizmos reserves that prefix for its management API and blocks app POSTs to it.
+- **`GET /export`** — dumps the table as CSV. Gated by the app's TELUS SSO; lock down further with a `[[gizmos_api_keys]]` binding for machine pulls.
 
-```js
-// Code.gs — paste into Extensions → Apps Script, then Deploy → Web app.
-const SHEET_NAME = 'responses';
-const SECRET = '';   // optional: set a shared secret and send it in the client payload
+Deploy:
 
-function doPost(e){
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try {
-    const data = JSON.parse(e.postData.contents);
-    if (SECRET && data.secret !== SECRET) return ContentService.createTextOutput('forbidden');
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
-    const headers = ['sessionId','serverTime','clientTime','quickRun','ai_tool','hardware',
-      'output_ratio','task_type','interactive','frequency','tokens','model','gpu','util',
-      'pue','grid','carbonKg','explored','editCount'];
-    if (sheet.getLastRow() === 0) sheet.appendRow(headers);
-    const row = headers.map(h => {
-      if (h === 'serverTime') return new Date();
-      const v = data[h];
-      return Array.isArray(v) ? v.join('|') : (v === undefined || v === null ? '' : v);
-    });
-    const n = Math.max(sheet.getLastRow() - 1, 0);
-    const ids = n ? sheet.getRange(2, 1, n, 1).getValues().flat() : [];
-    const idx = ids.indexOf(data.sessionId);
-    if (idx >= 0) sheet.getRange(idx + 2, 1, 1, headers.length).setValues([row]);  // upsert
-    else sheet.appendRow(row);
-    return ContentService.createTextOutput('ok');
-  } catch (err) {
-    return ContentService.createTextOutput('error');
-  } finally {
-    lock.releaseLock();
-  }
-}
+```bash
+node scripts/embed.mjs                        # compile template + index.html → gizmos-app/src/index.ts
+gizmos push --dry-run --org telus gizmos-app  # preview the 2-file bundle
+gizmos push --org telus gizmos-app            # deploy → https://ai-carbon-footprint.telus.gizmos.run
 ```
 
-**Trade-offs to know:** the Web App URL is public (anyone viewing source can see it and POST to it — the optional `SECRET` mitigates abuse); sends are fire-and-forget via `sendBeacon`/`no-cors` `fetch`, so the browser gets **no delivery confirmation**; and free-tier Apps Script quotas (not bills) are the only ceiling.
+D1 is auto-provisioned (`wrangler.toml` declares the `DB` binding); the `responses` table is created lazily by the worker. Inspect data by opening `/export` (CSV) in the SSO'd browser. (`gizmos db` needs an OIDC/browser session — it does **not** accept the `gzm_` push key — whereas `gizmos logs ai-carbon-footprint --org telus` does.)
 
 ---
 
