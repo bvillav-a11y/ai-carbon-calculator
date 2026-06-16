@@ -90,7 +90,7 @@ presentation/
 **Pillar III — The process of deployment (~5 min)**
 14. **Two homes** — GitHub Pages (public demo; `/collect` no-ops) vs TELUS gizmos (real home; same-origin collection).
 15. **gizmos architecture** — one **plain Workers module** (no imports) serving base64-embedded `index.html` + `POST /collect` → per-app **D1** + `GET /export` (CSV).
-16. **The war-stories** *(the fun slide)* — bare `hono` import → 500 on load → plain module; `/api/*` reserved by the platform → use `/collect`; Apps-Script cross-origin cookie stripping → same-origin pivot; base64 (not template literal) because the inline `<script>` is full of backticks/`${}`; `D1Proxy` API (`db.run`/`db.first`/`db.exec`); best-effort `ALTER TABLE` for schema evolution.
+16. **The war-stories** *(the fun slide)* — three platform lessons, each a distinct failure mode: (1) a bare `hono` import → 500 on module load → rewrite as a plain Workers module; (2) `/api/*` is reserved by the platform → app POSTs silently blocked → move endpoints to `/collect` & `/export`; (3) Apps-Script cross-origin requests dropped the auth cookie (third-party-cookie stripping) → pivot to same-origin collection — which motivates the slide 14–15 architecture. *(Deliberately cut to keep the slide focused: the base64 embed, the `D1Proxy` API quirk, and the `ALTER`-migration lesson — the last reappears on the Takeaways slide.)*
 17. **The embed pipeline** — `index.html` (source of truth) + `worker.template.ts` → `embed.mjs` → generated `gizmos-app/src/index.ts` → `gizmos push --org telus`; **regenerate after every edit**.
 18. **Collection & telemetry** — consent-gated; upsert-by-`sessionId`; baseline frozen at first results render; engagement signals (`dwell_ms`, opened-menu booleans, share, retake).
 
