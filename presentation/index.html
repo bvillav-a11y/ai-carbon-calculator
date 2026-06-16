@@ -329,6 +329,30 @@ gizmos-app/src/index.ts  →  gizmos push --org telus</code></pre>
     <aside class="notes">What we learn and how. Only anonymous signals — the survey answers, the computed number, and engagement: how long on results, which "More information" menus they opened, whether they shared or retook. All consent-gated, one upserted row per session. The schema note matters for the next slide's lesson: the prod table predates the telemetry columns, so the Worker runs idempotent ALTER TABLE migrations to add them — CREATE IF NOT EXISTS won't touch an existing table. ~55s.</aside>
   </section>
 
+  <!-- 19 · TAKEAWAYS -->
+  <section>
+    <div class="sec-label">what to steal</div>
+    <h2>Four things that generalise</h2>
+    <ul>
+      <li><strong>Platform constraints shape architecture</strong> — the plain Worker + same-origin collection are scars, not preferences.</li>
+      <li><strong>Ship the schema <em>and</em> its migration together</strong> — <code>CREATE IF NOT EXISTS</code> never alters a live table.</li>
+      <li><strong>Transparency is a feature</strong> — editable, sourced, confidence-rated beats a confident black box.</li>
+      <li><strong>Right-size your model</strong> — the app's own advice, applied to how we build.</li>
+    </ul>
+    <aside class="notes">The portable lessons. One: don't fight the platform — its limits became the design. Two: the migration lesson is the one I'd tattoo — a schema change isn't done until its migration ships with it. Three: for a credibility tool, showing the working IS the product. Four: meta-point — the tool tells users to pick the smallest model that does the job; same applies to our own engineering. ~55s.</aside>
+  </section>
+
+  <!-- 20 · END -->
+  <section>
+    <div class="divider">
+      <span class="pill">thank you</span>
+      <h2>Questions?</h2>
+      <p class="small">App · <code>ai-carbon-footprint.telus.gizmos.run</code></p>
+      <p class="small">Code · <code>github.com/bvillav-a11y/ai-carbon-calculator</code></p>
+    </div>
+    <aside class="notes">Close. Invite questions; offer to walk the live app or the Worker source. Likely Qs: where the per-token numbers come from (Epoch AI), why embodied is included, how gizmos D1 differs from raw D1 (the D1Proxy API). ~10s + Q&A.</aside>
+  </section>
+
 </div></div>
 <script src="reveal/dist/reveal.js"></script>
 <script src="reveal/plugin/notes/notes.js"></script>
