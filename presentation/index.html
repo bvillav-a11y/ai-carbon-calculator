@@ -264,6 +264,71 @@ html,body{background:var(--bg);}
     <aside class="notes">Close the rigour section on humility. Each factor carries a confidence level — grid is well-measured, PUE is inferred and uncertain. We list the big exclusions explicitly so nobody thinks the number is complete. And the engineering punchline: because computeCarbon is a single pure function, the Haiku/Sonnet/Opus scenario comparison is literally the same function called three times — no duplicated math to drift. ~55s.</aside>
   </section>
 
+  <!-- DIVIDER · PILLAR III -->
+  <section>
+    <div class="divider"><span class="pill">Pillar III</span><h2>The process of deployment</h2></div>
+    <aside class="notes">Transition to the war-stories. "Now how it actually got live — and everything that fought back." ~10s.</aside>
+  </section>
+
+  <!-- 14 · TWO HOMES -->
+  <section>
+    <div class="sec-label">where it lives</div>
+    <h2>Two targets, one source file</h2>
+    <div class="cards two">
+      <div class="card"><div class="ckey">GitHub Pages</div>public demo · serves <code>index.html</code> directly · <code>/collect</code> 404s, collection no-ops</div>
+      <div class="card"><div class="ckey">TELUS gizmos</div>the real home · same Worker serves the app <em>and</em> a same-origin <code>POST /collect</code> → per-app D1</div>
+    </div>
+    <p class="cap">The entire calculator is one <code>index.html</code> — HTML + one CSS block + one vanilla JS block. No framework.</p>
+    <aside class="notes">Set up the deployment shape. The calculator is a single no-framework index.html, which makes the public mirror trivial. The interesting target is gizmos — TELUS's internal app platform — where the same file is served by a Worker that also collects anonymous survey data into a per-app SQLite (D1) database. The constraint that everything is one HTML file drives the whole embed story coming up. ~50s.</aside>
+  </section>
+
+  <!-- 15 · GIZMOS ARCHITECTURE -->
+  <section>
+    <div class="sec-label">gizmos · architecture</div>
+    <h2>One plain Worker does everything</h2>
+    <pre><code>GET  /         → serve base64-embedded index.html
+POST /collect  → upsert survey row into D1 (by sessionId)
+GET  /export   → CSV dump of responses</code></pre>
+    <p class="small muted">Per-app D1 auto-provisioned · table created lazily (<code>CREATE TABLE IF NOT EXISTS</code>) · consent-gated.</p>
+    <aside class="notes">The shipped architecture, deliberately minimal. One Worker, three routes. The HTML is embedded in the Worker as a base64 string. Collection is a same-origin POST, upserting by session id so re-runs update one row. Export is a CSV endpoint we use to verify data, because the platform's DB CLI needs a browser session. Now — why does it look like this? Because three things broke first. ~50s.</aside>
+  </section>
+
+  <!-- 16 · WAR-STORIES -->
+  <section>
+    <div class="sec-label">what fought back</div>
+    <h2>Three platform lessons</h2>
+    <div class="cards">
+      <div class="card"><div class="ckey">1 · module load</div>a bare <code>import 'hono'</code> → <strong>500 on load</strong>, empty logs → rewrite as a plain Workers module, no imports</div>
+      <div class="card"><div class="ckey">2 · reserved path</div><code>/api/*</code> is platform-reserved → app POSTs <strong>silently blocked</strong> → move to <code>/collect</code> &amp; <code>/export</code></div>
+      <div class="card"><div class="ckey">3 · cross-origin auth</div>Apps-Script POSTs <strong>dropped the auth cookie</strong> (3rd-party-cookie stripping) → pivot to <em>same-origin</em> collection</div>
+    </div>
+    <aside class="notes">The fun slide — tell these as stories. (1) The deploy 500'd with empty logs; bisection showed the loader won't resolve a bare hono import at runtime, so any framework worker dies on load — fix was a plain Workers module with zero imports. (2) Collection POSTs vanished; turns out /api/* is reserved by the platform and app POSTs to it are blocked — renaming to /collect fixed it instantly. (3) The original plan POSTed to a Google Apps Script, but background cross-origin requests get their auth cookie stripped, so it silently 401'd — which is the whole reason collection became same-origin. Each failure shaped the architecture on the last two slides. ~90s.</aside>
+  </section>
+
+  <!-- 17 · EMBED PIPELINE -->
+  <section>
+    <div class="sec-label">build · embed.mjs</div>
+    <h2>One source file, regenerated</h2>
+    <pre><code>index.html  +  worker.template.ts
+      │  node scripts/embed.mjs   <span class="cmt">// base64-inline the HTML</span>
+      ▼
+gizmos-app/src/index.ts  →  gizmos push --org telus</code></pre>
+    <p class="small muted">Base64, not a template literal — the inline <code>&lt;script&gt;</code> is full of backticks and <code>${...}</code>. Regenerate after <em>every</em> edit.</p>
+    <aside class="notes">How a change ships. index.html stays the single source of truth; a small build step base64-encodes it into the Worker template, producing the deployable file we push. Why base64 and not a JS template string? The app's inline script is full of backticks and dollar-brace — it would shred a template literal. The one discipline: re-run embed after any HTML change, or you deploy stale. ~45s.</aside>
+  </section>
+
+  <!-- 18 · COLLECTION & TELEMETRY -->
+  <section>
+    <div class="sec-label">collection · telemetry</div>
+    <h2>Anonymous, consent-gated, one row per visit</h2>
+    <ul>
+      <li>Upsert by <code>sessionId</code>; baseline frozen at first results render.</li>
+      <li>Engagement: <code>dwell_ms</code>, which menus opened, share, retake.</li>
+      <li>Schema evolves via best-effort <code>ALTER TABLE … ADD COLUMN</code> on an existing table.</li>
+    </ul>
+    <aside class="notes">What we learn and how. Only anonymous signals — the survey answers, the computed number, and engagement: how long on results, which "More information" menus they opened, whether they shared or retook. All consent-gated, one upserted row per session. The schema note matters for the next slide's lesson: the prod table predates the telemetry columns, so the Worker runs idempotent ALTER TABLE migrations to add them — CREATE IF NOT EXISTS won't touch an existing table. ~55s.</aside>
+  </section>
+
 </div></div>
 <script src="reveal/dist/reveal.js"></script>
 <script src="reveal/plugin/notes/notes.js"></script>
