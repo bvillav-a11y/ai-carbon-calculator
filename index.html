@@ -1410,6 +1410,67 @@ function impactLabel(kg){
   return 'high impact';
 }
 
+// ── Insights & actions ──
+const GRID_HIGH = 150;        // g CO₂/kWh above which we suggest a cleaner grid
+const GRID_CLEAN_REF = 50;    // representative hydro/nuclear-class grid
+const TIER_ORDER = ['haiku', 'sonnet', 'opus'];
+const COMPLEXITY_LABELS = ['very simple', 'simple', 'moderate', 'complex', 'very complex'];
+
+function pctCut(after, before){ return before > 0 ? Math.round((1 - after / before) * 100) : 0; }
+
+function renderInsights(p, r){
+  const el = document.getElementById('insights');
+  if (!el) return;  // markup may not exist yet
+
+  // Block 1 — right-size the model
+  let modelLine = '';
+  const taskIdx = answers.task_type;
+  const isClaudeTier = TIER_ORDER.includes(p.modelId);
+  if (isClaudeTier && taskIdx !== undefined) {
+    const recommended = inferModel(taskIdx);
+    const selIdx = TIER_ORDER.indexOf(p.modelId);
+    const recIdx = TIER_ORDER.indexOf(recommended);
+    const complexity = escapeHtml(COMPLEXITY_LABELS[taskIdx] || 'moderate');
+    if (selIdx > recIdx) {
+      const rc = computeCarbon(p, recommended, p.tokens);
+      modelLine = `Your tasks look <b>${complexity}</b>, but you're on <b>${escapeHtml(MODEL_SPECS[p.modelId].label)}</b>. `
+        + `<b>${escapeHtml(MODEL_SPECS[recommended].label)}</b> would likely handle them and cut `
+        + `<b>~${fmt(r.totalKg - rc.totalKg, 2)} kg/mo (−${pctCut(rc.totalKg, r.totalKg)}%)</b>.`;
+    } else if (selIdx === recIdx) {
+      modelLine = `<b>${escapeHtml(MODEL_SPECS[p.modelId].label)}</b> fits your <b>${complexity}</b> workload — good match. `
+        + `Drop to a lighter model for quick lookups.`;
+    } else {
+      modelLine = `Your tasks look <b>${complexity}</b>; <b>${escapeHtml(MODEL_SPECS[p.modelId].label)}</b> may underperform — `
+        + `size up only if quality suffers.`;
+    }
+  }
+  const principle = `<span class="ins-principle">Right-size: <b>Haiku</b> for quick lookups · `
+    + `<b>Sonnet</b> for balanced · <b>Opus</b> for hard reasoning. Pick the smallest model that meets the need.</span>`;
+
+  // Block 2 — cleaner electricity
+  let gridLine;
+  if (p.grid > GRID_HIGH) {
+    const gc = computeCarbon({ ...p, grid: GRID_CLEAN_REF }, p.modelId, p.tokens);
+    gridLine = `Your grid is <b>~${p.grid} g CO₂/kWh</b>. Running where the grid is cleaner `
+      + `(hydro/nuclear ~${GRID_CLEAN_REF} g) would cut <b>~${pctCut(gc.totalKg, r.totalKg)}%</b>.`;
+  } else {
+    gridLine = `You're already on a relatively clean grid (~${p.grid} g CO₂/kWh) — nice.`;
+  }
+
+  el.innerHTML =
+    `<div class="ins-block"><div class="ins-h">🎯 Right-size your model</div>`
+    + (modelLine ? `<div class="ins-line">${modelLine}</div>` : ``)
+    + `<div class="ins-line">${principle}</div></div>`
+    + `<div class="ins-block"><div class="ins-h">🌱 Cleaner electricity</div>`
+    + `<div class="ins-line">${gridLine}</div></div>`
+    + `<div class="ins-block"><div class="ins-h">✅ Other ways to cut it</div>`
+    + `<ul class="ins-list">`
+    + `<li><b>Trim output length</b> — output tokens cost ~5× input; ask for concise answers.</li>`
+    + `<li><b>Use it deliberately</b> — every token scales linearly; reuse good outputs instead of regenerating.</li>`
+    + `<li><b>Prefer greener providers/regions</b> when you can choose.</li>`
+    + `</ul></div>`;
+}
+
 function recalc() {
   const p = getCalcInputs();
   const r = computeCarbon(p, p.modelId, p.tokens);
@@ -1512,6 +1573,8 @@ function recalc() {
      <td style="font-size:11px;color:var(--dim)">${src}${url?`<br><a href="${url}" target="_blank" rel="noopener">↗ ${url.replace('https://','').split('/')[0]}</a>`:''}</td>
      <td><span class="badge ${bmap[u]}">${blab[u]}</span></td></tr>`
   ).join('');
+
+  renderInsights(p, r);
 }
 
 function updateGridHighlight() {
