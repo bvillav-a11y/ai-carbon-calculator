@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Carbon Calculator — how it works</title>
+<link rel="stylesheet" href="reveal/dist/reset.css">
+<link rel="stylesheet" href="reveal/dist/reveal.css">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* ── App design tokens (verbatim from index.html :root, dark theme) ── */
+:root{
+  --bg:#0d1117; --surface:#161b22; --surface2:#1c2330; --border:#444c56;
+  --green:#3fb950; --green-dim:#122d1a; --amber:#e3b341; --red:#ff7b72;
+  --blue:#79b8ff; --purple:#bc8cff; --text:#e6edf3; --muted:#b1bac4; --dim:#8b949e;
+  --teal:#2fd4c6; --orange:#ff9d3c; --pink:#ff8ad4; --focus:#79c0ff;
+  --mono:'Space Mono',monospace; --sans:'Space Grotesk',sans-serif;
+}
+/* ── Reveal base ── */
+.reveal{font-family:var(--sans);color:var(--text);font-size:30px;}
+.reveal .slides{text-align:left;}
+.reveal .slides section{height:100%;}
+html,body{background:var(--bg);}
+.reveal h1,.reveal h2,.reveal h3{font-family:var(--sans);color:var(--text);
+  font-weight:700;text-transform:none;letter-spacing:-0.01em;margin:0 0 18px;line-height:1.1;}
+.reveal h1{font-size:1.9em;} .reveal h2{font-size:1.4em;} .reveal h3{font-size:1.05em;}
+.reveal p,.reveal li{color:var(--text);line-height:1.45;}
+.reveal strong{color:var(--text);font-weight:700;}
+.reveal em{color:var(--muted);font-style:normal;}
+.reveal a{color:var(--blue);}
+.reveal ul{margin-left:1em;} .reveal li{margin:0.35em 0;}
+/* ── Signature mono-uppercase section label (app .clabel) ── */
+.sec-label{font-family:var(--mono);font-size:0.5em;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--green);margin-bottom:14px;}
+.muted{color:var(--muted);} .small{font-size:0.7em;}
+.cap{font-size:0.62em;color:var(--muted);font-family:var(--mono);margin-top:10px;}
+/* ── Cards (app surface/border aesthetic) ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 20px;margin:10px 0;}
+.cards{display:grid;gap:14px;} .cards.two{grid-template-columns:1fr 1fr;}
+.ckey{font-family:var(--mono);font-size:0.52em;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--green);margin-bottom:6px;}
+/* ── Big headline number (app impact colour) ── */
+.headline{font-family:var(--mono);font-weight:700;color:var(--green);font-size:2.2em;line-height:1;}
+/* ── Ledger / equation trace (app #eqbox) ── */
+.ledger{font-family:var(--mono);font-size:0.62em;background:var(--surface2);
+  border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+.ledger .row{display:flex;justify-content:space-between;gap:18px;padding:5px 0;
+  border-bottom:1px solid var(--border);}
+.ledger .row:last-child{border-bottom:none;}
+.ledger .val{color:var(--green);}
+.ledger .tag{font-size:0.8em;color:var(--muted);}
+/* ── Confidence bars (app pattern) ── */
+.conf{margin:8px 0;font-family:var(--mono);font-size:0.55em;}
+.conf .lab{display:flex;justify-content:space-between;color:var(--muted);margin-bottom:3px;}
+.conf .track{height:8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.conf .fill{height:100%;background:var(--green);}
+/* ── Equivalents accents (deliberately distinct from semantic colours) ── */
+.eq-teal{color:var(--teal);} .eq-orange{color:var(--orange);} .eq-pink{color:var(--pink);}
+.eqgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:center;}
+.eqgrid .big{font-family:var(--mono);font-weight:700;font-size:1.7em;}
+/* token split colours */
+.in-tok{color:var(--blue);} .out-tok{color:var(--purple);}
+/* ── Code blocks: plain mono on surface2 (app shows code/ledger uncoloured) ── */
+.reveal pre{box-shadow:none;width:100%;margin:10px 0;font-size:0.5em;}
+.reveal pre code{font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:14px 16px;color:var(--text);max-height:none;line-height:1.4;}
+.reveal code{font-family:var(--mono);color:var(--green);}
+.reveal pre code .cmt{color:var(--dim);}
+/* ── Section-divider slide ── */
+.divider{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;height:100%;}
+.divider .pill{font-family:var(--mono);font-size:0.55em;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--green);background:var(--green-dim);border-radius:20px;padding:6px 16px;margin-bottom:18px;}
+.divider h2{font-size:1.9em;}
+/* ── Flow diagram (mental model) ── */
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:0.6em;}
+.flow .node{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;}
+.flow .arrow{color:var(--green);font-size:1.3em;}
+/* ── Green progress bar (app wizard bar) ── */
+.reveal .progress{color:var(--green);height:4px;}
+.reveal .progress span{background:var(--green);}
+.reveal .slide-number{background:transparent;color:var(--muted);font-family:var(--mono);font-size:14px;}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+</style>
+</head>
+<body>
+<div class="reveal"><div class="slides">
+
+  <section data-state="probe-title">
+    <div class="divider">
+      <span class="pill">probe</span>
+      <h1>Theme probe</h1>
+      <p class="muted">If this is Space Grotesk on near-black with a green pill, the theme + fonts load.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label">probe · speaker view</div>
+    <h2>Press <code>S</code> for speaker view</h2>
+    <p>You should see notes, a timer, and a next-slide preview in a popup window.</p>
+    <aside class="notes">If you can read this in the speaker window, the notes plugin works. Allow popups for file URLs.</aside>
+  </section>
+
+</div></div>
+<script src="reveal/dist/reveal.js"></script>
+<script src="reveal/plugin/notes/notes.js"></script>
+<script>
+Reveal.initialize({
+  hash:true, progress:true, slideNumber:'c/t', controls:true,
+  transition:'fade', transitionSpeed:'fast', width:1280, height:720, margin:0.06,
+  plugins:[ RevealNotes ]
+});
+</script>
+</body>
+</html>
