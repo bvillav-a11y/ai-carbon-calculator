@@ -1617,6 +1617,24 @@ function toggleAdv() {
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 
+function toggleParams() {
+  const s = document.getElementById('paramsSec');
+  const btn = document.getElementById('paramsTog');
+  const open = !s.classList.contains('open');
+  s.classList.toggle('open', open);
+  btn.textContent = open ? '⚙ Hide parameters' : '⚙ Adjust parameters';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function toggleTrace() {
+  const s = document.getElementById('traceSec');
+  const btn = document.getElementById('traceTog');
+  const open = !s.classList.contains('open');
+  s.classList.toggle('open', open);
+  btn.textContent = open ? '▾ Hide calculation trace' : '▸ Show calculation trace';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
 function pickLocRow(tr) {
   document.getElementById('grid').value = tr.dataset.g;
   document.getElementById('gridLbl').textContent = tr.dataset.g + ' g CO₂/kWh';
