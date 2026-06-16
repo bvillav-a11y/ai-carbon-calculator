@@ -1256,6 +1256,7 @@ function showCalc() {
 }
 
 function retakeSurvey() {
+  markEngagement('retookSurvey');
   currentStep = 0;
   clearTips();
   document.getElementById('calcScreen').style.display    = 'none';
@@ -1616,6 +1617,7 @@ function toggleAdv() {
   s.classList.toggle('open', open);
   btn.textContent = open ? '⚙ Hide embodied carbon settings' : '⚙ Show embodied carbon settings';
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) markEngagement('openedAdvanced');
 }
 
 function toggleParams() {
@@ -1625,6 +1627,7 @@ function toggleParams() {
   s.classList.toggle('open', open);
   btn.textContent = open ? '⚙ Hide parameters' : '⚙ Adjust parameters';
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) markEngagement('openedParams');
 }
 
 function toggleTrace() {
@@ -1634,6 +1637,7 @@ function toggleTrace() {
   s.classList.toggle('open', open);
   btn.textContent = open ? '▾ Hide calculation trace' : '▸ Show calculation trace';
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) markEngagement('openedTrace');
 }
 
 function pickLocRow(tr) {
@@ -1694,6 +1698,7 @@ function buildShareUrl() {
 }
 
 async function shareResults() {
+  markEngagement('clickedShare');
   const url   = buildShareUrl();
   const toast = document.getElementById('shareToast');
   try {
@@ -1819,9 +1824,16 @@ function collectBaseline(quickRun){
     carbonKg:     r.totalKg,
     explored:     false,
     editCount:    0,
+    dwellMs:        null,
+    openedParams:   false,
+    openedTrace:    false,
+    openedAdvanced: false,
+    clickedShare:   false,
+    retookSurvey:   false,
     clientTime:   new Date().toISOString(),
   };
   _collect.sent = true;
+  _collect.startTs = Date.now();
   sendCollect(_collect.payload);
 
   // Attach exploration listeners once. These fire only on real user input
@@ -1844,7 +1856,19 @@ function markExplored(){
   clearTimeout(_exploreTimer);
   _exploreTimer = setTimeout(() => sendCollect(_collect.payload), 2000);
 }
-window.addEventListener('pagehide', () => { if (_collect.explored) sendCollect(_collect.payload); });
+function markEngagement(key){
+  if (!_collect.sent || !COLLECT_URL || !hasConsent() || !_collect.payload) return;
+  _collect.payload[key] = true;
+  clearTimeout(_exploreTimer);
+  _exploreTimer = setTimeout(function(){ sendCollect(_collect.payload); }, 2000);
+}
+function _finalizeCollect(){
+  if (!_collect.sent || !COLLECT_URL || !hasConsent() || !_collect.payload) return;
+  _collect.payload.dwellMs = Date.now() - (_collect.startTs || Date.now());
+  sendCollect(_collect.payload);
+}
+window.addEventListener('pagehide', _finalizeCollect);
+window.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') _finalizeCollect(); });
 </script>
 </body>
 </html>
