@@ -410,10 +410,10 @@ Replace the two probe `<section>`s with the title, the question, a Pillar-I divi
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
-grep -c "<section" presentation/index.html   # expect 6
+grep -c "<section" presentation/index.html   # expect 7 (slides 1-6 + the Pillar-I divider section)
 open presentation/index.html
 ```
-Arrow through all 6: title → problem → Pillar-I divider → mental-model flow → survey → outcome-first → credibility. Confirm the flow diagram arrows are green, cards render on `--surface`, every slide has a green mono section label or pill. Press `S` and confirm notes appear for each.
+Arrow through all 7: title → problem → Pillar-I divider → mental-model flow → survey → outcome-first → credibility. Confirm the flow diagram arrows are green, cards render on `--surface`, every slide has a green mono section label or pill. Press `S` and confirm notes appear for each.
 
 - [ ] **Step 3: Commit**
 
@@ -537,7 +537,7 @@ Append these `<section>`s after slide 6 (before the closing `</div></div>` of `.
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
-grep -c "<section" presentation/index.html   # expect 14 (6 + 8 new: divider + 7 content)
+grep -c "<section" presentation/index.html   # expect 15 (7 + 8 new: Pillar-II divider + 7 content)
 open presentation/index.html
 ```
 Arrow from the Pillar-II divider through slide 13. Confirm: the ledger rows render with green right-aligned values; the token-split uses blue (input) / purple (output); the grid table shows 15→700; the equivalents use orange/teal/pink; confidence bars fill green. Spot-check that the `MODEL_SPECS` numbers on slide 8 match `index.html` (in 0.000090/0.000390/0.000780, out 0.000450/0.001950/0.003900).
@@ -632,7 +632,7 @@ gizmos-app/src/index.ts  →  gizmos push --org telus</code></pre>
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
-grep -c "<section" presentation/index.html   # expect 20 (14 + 6 new: divider + 5 content)
+grep -c "<section" presentation/index.html   # expect 21 (15 + 6 new: Pillar-III divider + 5 content)
 open presentation/index.html
 ```
 Arrow from the Pillar-III divider through slide 18. Confirm the three route lines and the embed pipeline render as mono code blocks on `--surface2`; the war-stories show as three numbered cards. Check notes on `S`.
@@ -686,11 +686,11 @@ Append after slide 18 — the last content before `</div></div>`.
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
-grep -c "<section" presentation/index.html   # expect 22 (20 + 2)
-grep -c "<aside class=\"notes\"" presentation/index.html   # expect 22 (every slide has notes)
+grep -c "<section" presentation/index.html   # expect 23 (21 + 2)
+grep -c "<aside class=\"notes\"" presentation/index.html   # expect 23 (every slide has notes)
 open presentation/index.html
 ```
-Full pass: all 22 sections present, every slide has a speaker note. Press `ESC` for the overview grid to eyeball pacing.
+Full pass: all 23 sections present (20 numbered slides + 3 pillar dividers), every slide has a speaker note. Press `ESC` for the overview grid to eyeball pacing.
 
 - [ ] **Step 3: Commit**
 
@@ -779,6 +779,6 @@ git commit -m "Deck README: present/export/re-vendor instructions"
 
 **2. Placeholder scan** — no TBD/TODO; every code step is complete HTML/CSS/bash. Figures are literal from constants.
 
-**3. Consistency** — CSS class names used in slides (`.sec-label`, `.card`, `.cards.two`, `.ckey`, `.ledger`/`.row`/`.val`/`.tag`, `.conf`/`.track`/`.fill`, `.eqgrid`/`.big`, `.eq-teal/-orange/-pink`, `.in-tok`/`.out-tok`, `.flow`/`.node`/`.arrow`, `.divider`/`.pill`, `.cap`, `.cmt`, `.muted`, `.small`) are all defined in the Task 3 `<style>` block. Section count assertions are cumulative and correct: 6 → 14 → 20 → 22.
+**3. Consistency** — CSS class names used in slides (`.sec-label`, `.card`, `.cards.two`, `.ckey`, `.ledger`/`.row`/`.val`/`.tag`, `.conf`/`.track`/`.fill`, `.eqgrid`/`.big`, `.eq-teal/-orange/-pink`, `.in-tok`/`.out-tok`, `.flow`/`.node`/`.arrow`, `.divider`/`.pill`, `.cap`, `.cmt`, `.muted`, `.small`) are all defined in the Task 3 `<style>` block. Section count assertions are cumulative and correct (counting the 3 pillar-divider sections): 7 → 15 → 21 → 23.
 
 **Note on "tests":** a static deck has no automated suite; per-task verification is browser-based (render, notes, offline, figure spot-check), mirroring how `index.html` itself is verified in this repo.
