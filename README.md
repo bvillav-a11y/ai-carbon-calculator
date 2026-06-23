@@ -2,7 +2,7 @@
 
 A browser-based tool that estimates the monthly carbon footprint of your personal AI usage — no installation, no backend, no data sent anywhere.
 
-**[→ Try it live](https://bvillav-a11y.github.io/ai-carbon-calculator)**
+**[→ Public demo](https://bvillav-a11y.github.io/ai-carbon-calculator)** (GitHub Pages) · **[→ TELUS internal](https://ai-carbon-footprint.telus.gizmos.run)** (Gizmos, SSO required)
 
 ---
 
@@ -37,14 +37,42 @@ This tool makes those factors visible and personal.
 
 ## How to use it
 
-Download or clone this repo, open `index.html` in any modern browser, and follow the 8-question wizard. No dependencies, no build step, no internet connection required (except for loading the Google Font, which degrades gracefully).
+Clone the repo and open `index.html` directly — no server, no build step, no internet required (the Google Font degrades gracefully offline).
 
 ```bash
 git clone https://github.com/bvillav-a11y/ai-carbon-calculator
 cd ai-carbon-calculator
-open index.html        # macOS
-# or just double-click index.html on Windows/Linux
+open index.html        # macOS; or double-click on Windows/Linux
 ```
+
+---
+
+## Deployment
+
+### GitHub Pages — public demo
+
+Serves `main` at **https://bvillav-a11y.github.io/ai-carbon-calculator** (~1 min after push). No build step — Pages serves `index.html` directly. Collection is attempted the same as on Gizmos, but the `/collect` path 404s here, so POSTs silently no-op.
+
+```bash
+git push   # deploys automatically when main is updated
+```
+
+### Gizmos — TELUS internal
+
+The real home at **https://ai-carbon-footprint.telus.gizmos.run** (TELUS SSO). A plain Workers module (no imports) serves `index.html` from a base64-inlined string and exposes two same-origin routes backed by the app's per-app D1 database:
+
+- **`POST /collect`** — upserts anonymous survey data by session id. Same-origin avoids cross-origin/cookie issues. Path must **not** start with `/api/` (reserved by the Gizmos platform).
+- **`GET /export`** — dumps the `responses` table as CSV. Gated by TELUS SSO.
+
+Edit worker logic in `scripts/worker.template.ts`. After any change to `index.html` or the template, regenerate the bundle:
+
+```bash
+node scripts/embed.mjs                        # compile → gizmos-app/src/index.ts
+gizmos push --dry-run --org telus gizmos-app  # preview
+gizmos push --org telus gizmos-app            # deploy (needs GIZMOS_API_KEY)
+```
+
+D1 is auto-provisioned; the `responses` table is created lazily. Inspect data at `/export` in an SSO'd browser. (`gizmos db` needs an OIDC session, not the push key; `gizmos logs ai-carbon-footprint --org telus` works with either.)
 
 ---
 
@@ -120,7 +148,15 @@ The confidence bars in the tool reflect these levels explicitly. Treat results a
 
 ## Data collection
 
-When the calculator runs on **TELUS Gizmos**, it sends **one anonymous record per completed run** to the app's own database, to understand how people use AI and improve the tool. Collection is **opt-out**: a checkbox on the intro screen (ticked by default) controls it, and the choice is remembered in your browser. Unticking it means nothing is ever sent. On the public GitHub Pages mirror there is no backend, so collection silently does nothing.
+The app sends **one anonymous record per completed run** to understand how people use AI and improve the tool. Collection is **opt-out**: a checkbox on the intro screen (ticked by default) controls it, and the choice is remembered in your browser.
+
+### GitHub Pages
+
+The browser POSTs to `/collect` the same as on Gizmos, but there is no backend, so the request 404s and silently no-ops. No data is stored.
+
+### Gizmos
+
+Submissions land in the app's per-app D1 database via a same-origin `POST /collect`. Same-origin avoids the cross-origin/cookie problem that killed an earlier Google Apps Script attempt. **The path must not begin with `/api/`** — Gizmos reserves that prefix and blocks app POSTs to it.
 
 **What is collected** (one row per visit, upserted by a random per-visit session id):
 
@@ -138,22 +174,7 @@ The record is **frozen at the moment results first render** — the honest "usag
 
 **Privacy posture:** no names, emails, IP-linked identifiers, or free text are collected; only the structured fields above. The session id is random and exists solely to keep one row per visit. Because the Gizmos app is gated behind TELUS SSO, the collection endpoint never needs to authenticate the caller — and the data stays inside TELUS.
 
-### How it works (Gizmos)
-
-The app deploys as a **single Gizmos app** (the self-contained `gizmos-app/` dir): a plain Workers module serves the calculator at `/` and exposes two same-origin routes backed by the app's **per-app D1** database. Worker logic is authored in `scripts/worker.template.ts`; `scripts/embed.mjs` compiles it + `index.html` into the deploy-only `gizmos-app/src/index.ts` (one self-contained file, no imports — the Gizmos loader resolves neither a bare `hono` import nor relative imports at runtime):
-
-- **`POST /collect`** — the browser POSTs the JSON payload here via `fetch` (same-origin; `keepalive` lets it survive page unload). The worker upserts it into the `responses` table by `session_id`. Same-origin avoids the cross-origin/cookie problem that killed an earlier Google Apps Script attempt. **The path must not begin with `/api/`** — gizmos reserves that prefix for its management API and blocks app POSTs to it.
-- **`GET /export`** — dumps the table as CSV. Gated by the app's TELUS SSO; lock down further with a `[[gizmos_api_keys]]` binding for machine pulls.
-
-Deploy:
-
-```bash
-node scripts/embed.mjs                        # compile template + index.html → gizmos-app/src/index.ts
-gizmos push --dry-run --org telus gizmos-app  # preview the 2-file bundle
-gizmos push --org telus gizmos-app            # deploy → https://ai-carbon-footprint.telus.gizmos.run
-```
-
-D1 is auto-provisioned (`wrangler.toml` declares the `DB` binding); the `responses` table is created lazily by the worker. Inspect data by opening `/export` (CSV) in the SSO'd browser. (`gizmos db` needs an OIDC/browser session — it does **not** accept the `gzm_` push key — whereas `gizmos logs ai-carbon-footprint --org telus` does.)
+Inspect data at `/export` (CSV dump) in an SSO'd browser. (`gizmos db` needs an OIDC session, not the push key; `gizmos logs ai-carbon-footprint --org telus` works with either.)
 
 ---
 

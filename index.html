@@ -1807,8 +1807,8 @@ if (applyHashState()) {
 // ═══════════════════════════════════════════════════════════
 // SURVEY DATA COLLECTION  (fire-and-forget POST)
 // On Gizmos this is a SAME-ORIGIN path served by the app's own worker
-// (src/index.ts → D1). On the static GitHub Pages mirror the path 404s,
-// so collection silently no-ops there. Set to '' to disable entirely.
+// (src/index.ts → D1). On GitHub Pages the POST 404s and collection
+// silently no-ops. Set to '' to disable entirely.
 // ═══════════════════════════════════════════════════════════
 const COLLECT_URL = '/collect';
 
