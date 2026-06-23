@@ -1,7 +1,0 @@
-# Gizmos ignores `name`/`database_name`/`database_id` server-side (app name comes
-# from --app / the deploy identity; D1 is auto-provisioned from the binding). `name`
-# is kept only so a bare `gizmos push gizmos-app` defaults --app to the right app.
-name = "ai-carbon-footprint"
-
-[[d1_databases]]
-binding = "DB"
