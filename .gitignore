@@ -6,3 +6,6 @@ node_modules/
 *.zip
 .vscode/
 .idea/
+presentation/
+gizmos-app/
+responses.csv
